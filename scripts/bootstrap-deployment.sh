@@ -39,6 +39,16 @@ signing_file_path="$(absolute_path "$signing_file")"
 connector_file_path="$(absolute_path "$connector_file")"
 secret_dir="$(dirname "$token_file_path")"
 
+if [ "$token_file_path" = "$signing_file_path" ] \
+  || [ "$token_file_path" = "$connector_file_path" ] \
+  || [ "$signing_file_path" = "$connector_file_path" ] \
+  || [ "$env_file" = "$token_file_path" ] \
+  || [ "$env_file" = "$signing_file_path" ] \
+  || [ "$env_file" = "$connector_file_path" ]; then
+  printf 'Deployment environment and secret paths must be distinct.\n' >&2
+  exit 1
+fi
+
 mkdir -p "$hydra_data_path/store" "$hydra_data_path/cache" \
   "$secret_dir" "$(dirname "$signing_file_path")" "$(dirname "$connector_file_path")"
 
