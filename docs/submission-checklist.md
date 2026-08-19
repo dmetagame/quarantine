@@ -13,7 +13,7 @@ competition ownership.
 
 - [x] **Public GitHub repository** - created at
   <https://github.com/dmetagame/quarantine>. The refreshed live evidence
-  validates; the initial commit and push are tracked separately below.
+  validates, and the initial release is published on `main`.
 - [x] **Open-source license file** - MIT license is present. NEEDS HUMAN ACTION
   to confirm that `Quarantine contributors` is the correct copyright notice.
 - [x] **README** - judge-facing thesis, problem, solution, architecture,
@@ -47,7 +47,10 @@ competition ownership.
   fit, eligibility, public-repository timing, and prohibited pre-hackathon
   work cannot be established from this checkout.
 - [x] **Final repository URL** - <https://github.com/dmetagame/quarantine>.
-- [ ] **Final commit or tag** - NEEDS HUMAN ACTION after review and commit.
+- [x] **Initial public release commit** - `0389490` (`Initial Hack Hydra
+  release`) is pushed to `main`.
+- [ ] **Final deployment/submission tag** - PENDING until the hosted demo is
+  deployed and revalidated.
 - [ ] **Submission form** - NEEDS HUMAN ACTION.
 
 ## Required Host-Side Release Run
@@ -76,10 +79,10 @@ After the run, confirm that the provenance, gateway, and demo dated/latest
 pairs are byte-identical, that both HydraDB reports pass their structural
 assertions, and that `npm run validate:evidence` passes.
 
-## Owner Repository Release Commands
+## Reproducing The Initial Repository Release
 
-After the live gate passes and the copyright notice is confirmed, review the
-staged file list before creating the first commit and public repository:
+The initial public repository has already been created. These are the commands
+used to review and publish it after the live gate passed:
 
 ```bash
 git add .
