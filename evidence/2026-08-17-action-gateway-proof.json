@@ -1,0 +1,414 @@
+{
+  "status": "PASS",
+  "recorded_at": "2026-08-17T00:00:00.000Z",
+  "gate": "trusted_state_action_gateway",
+  "schema_version": 1,
+  "run_id": "gateway-gate-v1",
+  "container": "quarantine-hydradb",
+  "image": "ghcr.io/hydra-db/hydradb:0.1.1",
+  "image_digest": "sha256:db78309a233be54662db29744047e985a39b51c45a270d1a1f47c31a62cdb709",
+  "hydradb_identity": {
+    "source": "declared_by_pinned_start_script_and_environment",
+    "image": "ghcr.io/hydra-db/hydradb:0.1.1",
+    "registry_digest": "sha256:db78309a233be54662db29744047e985a39b51c45a270d1a1f47c31a62cdb709"
+  },
+  "hydradb": {
+    "http": "http://127.0.0.1:18443",
+    "admin": "http://127.0.0.1:19091",
+    "graph": "default",
+    "namespace": "default",
+    "cell": "cell-0",
+    "consistency": "strong"
+  },
+  "implementation": {
+    "hash_algorithm": "sha256",
+    "files": {
+      "src/hydradb-client.mjs": "d03bd0df67804909ec48cdafd9af3066acb5bffe9bb5bd3b1d1576dbba0b19c3",
+      "src/provenance-writer.mjs": "4c819a97e78cd49b00c2991c3492be508615c8b2311ba8d0a4e358482565784b",
+      "src/action-gateway.mjs": "cce8140621e4d87be06f6e1ebe4e822710a5ffd018a885f8e177b7dc5cfae997",
+      "scripts/prove-action-gateway.mjs": "eb562de241042b4ab8d7ae1292e700c9fe2fe0de24ee3635de0d150e8f9ea0d8",
+      "scripts/validate-action-gateway-evidence.mjs": "556b696c0c0da3e4201b8352a1cac69deca020e5aad78edb712708304169240f"
+    }
+  },
+  "gateway": {
+    "gateway_version": "fail-closed-action-gateway-v1",
+    "trusted_state_contract_version": "trusted-state-contract-v1",
+    "policy_version": "internal-message-policy-v1",
+    "verifier_version": "provenance-state-verifier-v1",
+    "verification_timeout_ms": 5000,
+    "allowed_source_authorities": [
+      "quarantine-proof-connector"
+    ],
+    "allowed_destinations": [
+      "internal:alerts"
+    ],
+    "fail_closed_reason_codes": [
+      "BLOCK_INVALID_INPUT",
+      "BLOCK_MISSING_PROVENANCE",
+      "BLOCK_INVALID_PROVENANCE",
+      "BLOCK_UNRESOLVED_ANCESTRY",
+      "BLOCK_POLICY",
+      "BLOCK_STALE",
+      "BLOCK_REPLAY",
+      "BLOCK_SYSTEM_ERROR"
+    ]
+  },
+  "setup": {
+    "trusted_source": "gateway-gate-v1:source:trusted",
+    "action_argument": "gateway-gate-v1:action:argument",
+    "source_result": "READY",
+    "action_argument_result": "READY",
+    "graph_assertions": {
+      "trusted_source_vertices": 1,
+      "action_argument_vertices": 1,
+      "direct_edges": 1,
+      "hydrated_edge_kind": "require",
+      "reverse_witness_count": 1,
+      "verification_status": "PASS",
+      "verification_result": "PROVENANCE_STATE_VERIFIED"
+    }
+  },
+  "tests": [
+    {
+      "name": "forged_trusted_state_fields_are_rejected",
+      "input_classification": "caller_controlled_trust_claim",
+      "input": {
+        "field": "trusted_state",
+        "attempted_value": true
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_INVALID_INPUT",
+      "detail": "UNTRUSTED_CONTROL_FIELD",
+      "graph_assertions": {
+        "verifier_calls": 0,
+        "adapter_calls": 0,
+        "rejected_fields": [
+          "trusted_state"
+        ]
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "forged_provenance_witness_is_rejected",
+      "input_classification": "caller_controlled_trust_claim",
+      "input": {
+        "field": "witnesses",
+        "attempted_value": [
+          {
+            "forged": true
+          }
+        ]
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_INVALID_INPUT",
+      "detail": "UNTRUSTED_CONTROL_FIELD",
+      "graph_assertions": {
+        "verifier_calls": 0,
+        "adapter_calls": 0,
+        "rejected_fields": [
+          "witnesses"
+        ]
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "forged_policy_result_is_rejected",
+      "input_classification": "caller_controlled_trust_claim",
+      "input": {
+        "field": "policy_result",
+        "attempted_value": true
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_INVALID_INPUT",
+      "detail": "UNTRUSTED_CONTROL_FIELD",
+      "graph_assertions": {
+        "verifier_calls": 0,
+        "adapter_calls": 0,
+        "rejected_fields": [
+          "policy_result"
+        ]
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "forged_freshness_is_rejected",
+      "input_classification": "caller_controlled_trust_claim",
+      "input": {
+        "field": "fresh",
+        "attempted_value": true
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_INVALID_INPUT",
+      "detail": "UNTRUSTED_CONTROL_FIELD",
+      "graph_assertions": {
+        "verifier_calls": 0,
+        "adapter_calls": 0,
+        "rejected_fields": [
+          "fresh"
+        ]
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "forged_verification_status_is_rejected",
+      "input_classification": "caller_controlled_trust_claim",
+      "input": {
+        "field": "verified",
+        "attempted_value": true
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_INVALID_INPUT",
+      "detail": "UNTRUSTED_CONTROL_FIELD",
+      "graph_assertions": {
+        "verifier_calls": 0,
+        "adapter_calls": 0,
+        "rejected_fields": [
+          "verified"
+        ]
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "direct_adapter_bypass_is_unavailable",
+      "input_classification": "caller_supplied_adapter_capability",
+      "input": {
+        "attempted_field": "adapter"
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_INVALID_INPUT",
+      "detail": "UNTRUSTED_CONTROL_FIELD",
+      "graph_assertions": {
+        "public_execute_method": false,
+        "verifier_calls": 0,
+        "adapter_calls": 0,
+        "rejected_fields": [
+          "adapter"
+        ]
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "malformed_verified_provenance_blocks",
+      "input_classification": "verifier_returned_disconnected_witness",
+      "input": {
+        "forged_parent_artifact_id": "gateway-gate-v1:forged:parent"
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_INVALID_PROVENANCE",
+      "detail": "MALFORMED_OR_UNBOUND_PROVENANCE",
+      "graph_assertions": {
+        "adapter_calls": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "legitimate_live_hydradb_action_is_allowed",
+      "input_classification": "live_hydradb_verified_provenance",
+      "input": {
+        "action_id": "gateway-gate-v1:action:send",
+        "provenance_artifact_id": "gateway-gate-v1:action:argument"
+      },
+      "expected_result": "ALLOW",
+      "actual_result": "ALLOW",
+      "reason_code": null,
+      "detail": "ACTION_AUTHORIZED",
+      "graph_assertions": {
+        "adapter_calls": 1,
+        "authorized_at": 2000,
+        "verification_status": "PASS",
+        "direct_edges": 1,
+        "reverse_witness_count": 1,
+        "authorized_action_id": "gateway-gate-v1:action:send",
+        "adapter_result": "DRY_RUN"
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "missing_provenance_blocks",
+      "input_classification": "live_hydradb_missing_graph_record",
+      "input": {
+        "provenance_artifact_id": "gateway-gate-v1:missing:artifact"
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_MISSING_PROVENANCE",
+      "detail": "PROVENANCE_ARTIFACT_NOT_FOUND",
+      "graph_assertions": {
+        "missing_vertices": 0,
+        "adapter_calls": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "unresolved_ancestry_blocks",
+      "input_classification": "live_hydradb_depth_capped_provenance",
+      "input": {
+        "provenance_artifact_id": "gateway-gate-v1:unresolved:argument",
+        "max_depth": 1
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_UNRESOLVED_ANCESTRY",
+      "detail": "DEPTH_CAP_REACHED",
+      "graph_assertions": {
+        "full_verification_status": "PASS",
+        "capped_verification_status": "BLOCK",
+        "capped_verification_detail": "DEPTH_CAP_REACHED",
+        "unresolved_argument_vertices": 1,
+        "unresolved_summary_vertices": 1,
+        "argument_to_summary_edges": 1,
+        "summary_to_source_edges": 1,
+        "adapter_calls": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "stale_trusted_state_blocks",
+      "input_classification": "trusted_clock_freshness_expired",
+      "input": {
+        "max_freshness_ms": 10,
+        "verified_at": 2000,
+        "current_time": 2010
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_STALE",
+      "detail": "TRUSTED_STATE_EXPIRED",
+      "graph_assertions": {
+        "adapter_calls": 0,
+        "trusted_clock_calls": 2
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "policy_violation_blocks",
+      "input_classification": "external_destination_policy_violation",
+      "input": {
+        "destination": "external:webhook",
+        "data_class": "internal"
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_POLICY",
+      "detail": "DESTINATION_NOT_ALLOWED",
+      "graph_assertions": {
+        "adapter_calls": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "replay_is_deterministic_and_adapter_runs_once",
+      "input_classification": "same_request_and_action_replayed",
+      "input": {
+        "request_id": "gateway-gate-v1:replay:request",
+        "action_id": "gateway-gate-v1:replay:action"
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_REPLAY",
+      "detail": "REQUEST_REPLAYED",
+      "graph_assertions": {
+        "first_result": "ALLOW",
+        "replay_result": "BLOCK",
+        "request_conflict_detail": "REQUEST_ID_CONFLICT",
+        "action_conflict_detail": "ACTION_ID_CONFLICT",
+        "adapter_calls": 1
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "malformed_action_blocks_before_verification",
+      "input_classification": "malformed_or_unsupported_action_intent",
+      "input": {
+        "action_type": "send_message",
+        "malformed_parameter": true
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_INVALID_INPUT",
+      "detail": "INVALID_ACTION_PARAMETERS",
+      "graph_assertions": {
+        "verifier_calls": 0,
+        "adapter_calls": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "hydradb_verification_failure_blocks",
+      "input_classification": "injected_hydradb_query_failure",
+      "input": {
+        "failure": "hydradb_query_throw"
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_SYSTEM_ERROR",
+      "detail": "PROVENANCE_VERIFICATION_FAILED",
+      "graph_assertions": {
+        "verifier_classification": "SYSTEM_ERROR",
+        "adapter_calls": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "verification_timeout_blocks",
+      "input_classification": "stalled_trusted_verifier",
+      "input": {
+        "verification_timeout_ms": 5
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_SYSTEM_ERROR",
+      "detail": "PROVENANCE_VERIFICATION_TIMEOUT",
+      "graph_assertions": {
+        "adapter_calls": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "blocked_actions_never_reach_adapter",
+      "input_classification": "aggregate_fail_closed_adapter_guard",
+      "input": {
+        "blocked_paths": [
+          "missing",
+          "unresolved",
+          "stale",
+          "policy",
+          "malformed",
+          "system_error"
+        ]
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_MISSING_PROVENANCE",
+      "detail": "ADAPTER_NOT_CALLED",
+      "graph_assertions": {
+        "blocked_attempts": 6,
+        "adapter_calls": 0,
+        "all_blocked": true
+      },
+      "status": "PASS"
+    }
+  ],
+  "summary": {
+    "total": 17,
+    "passed": 17,
+    "failed": 0
+  },
+  "notes": [
+    "The positive control writes an action_argument through the trusted provenance writer and verifies it from live HydraDB before gateway authorization.",
+    "The missing-record and depth-capped ancestry controls call the live writer verifier; the unresolved fixture is a signed two-hop chain that passes at depth 16 and blocks at depth 1.",
+    "The gateway accepts only raw ActionIntent values; trusted state, provenance witnesses, policy decisions, freshness, and verification claims are not caller-controlled fields.",
+    "The dry-run adapter is an opaque capability without a public execute method and receives an authorized immutable action only after graph verification, policy evaluation, freshness, and replay checks.",
+    "HydraDB query failures, verifier exceptions, and verification timeouts are mapped to BLOCK_SYSTEM_ERROR and never authorize an action.",
+    "The MVP policy uses an exact internal:alerts destination and a trusted connector-authority allowlist.",
+    "Replay protection is process-local and covers both request_id and action_id; adapter response loss remains indeterminate and is not automatically retried.",
+    "The fixed recorded_at value, clock, and fixture identifiers make this evidence deterministic; recorded_at is not a wall-clock execution timestamp, and local signing and connector keys are proof fixtures only."
+  ]
+}

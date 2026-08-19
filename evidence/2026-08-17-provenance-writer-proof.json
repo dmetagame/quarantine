@@ -1,0 +1,468 @@
+{
+  "status": "PASS",
+  "recorded_at": "2026-08-19T13:19:08.320Z",
+  "gate": "trusted_provenance_writer",
+  "schema_version": 2,
+  "run_id": "8136f60fe5ebdc10",
+  "container": "quarantine-hydradb",
+  "image": "ghcr.io/hydra-db/hydradb:0.1.1",
+  "image_digest": "sha256:db78309a233be54662db29744047e985a39b51c45a270d1a1f47c31a62cdb709",
+  "hydradb_identity": {
+    "source": "declared_by_pinned_start_script_and_environment",
+    "image": "ghcr.io/hydra-db/hydradb:0.1.1",
+    "registry_digest": "sha256:db78309a233be54662db29744047e985a39b51c45a270d1a1f47c31a62cdb709"
+  },
+  "hydradb": {
+    "http": "http://127.0.0.1:18443",
+    "admin": "http://127.0.0.1:19091",
+    "graph": "default",
+    "namespace": "default",
+    "cell": "cell-0",
+    "consistency": "strong"
+  },
+  "implementation": {
+    "hash_algorithm": "sha256",
+    "files": {
+      "src/hydradb-client.mjs": "d03bd0df67804909ec48cdafd9af3066acb5bffe9bb5bd3b1d1576dbba0b19c3",
+      "src/provenance-writer.mjs": "4c819a97e78cd49b00c2991c3492be508615c8b2311ba8d0a4e358482565784b",
+      "scripts/prove-provenance-writer.mjs": "addc1f4e137bcfdcc30fda7e9c81acc46173ce46b3003eac95f43512cf0bd549",
+      "scripts/validate-evidence.mjs": "4a7bfcfd123c5ead8d1f4794c49eeabcfbb205d6e84c40af4289eadc01aaac3a"
+    }
+  },
+  "writer": {
+    "writer_id": "quarantine-writer-v1",
+    "gate_id": "trusted-provenance-writer-v1",
+    "provenance_schema_version": 2,
+    "invalid_reason_code": "BLOCK_INVALID_PROVENANCE",
+    "lineage_direction": "child_to_parent",
+    "authenticity": "connector_attestation_plus_server_hmac_over_batch_bound_node_and_edge_properties",
+    "producer_control_fields": [
+      "content"
+    ],
+    "middleware_control_fields": [
+      "artifactId",
+      "role",
+      "observedParentIds",
+      "kind"
+    ],
+    "pending_nodes_are_valid_parents": false
+  },
+  "setup": {
+    "legitimate_parent": "writer-gate-v2:8136f60fe5ebdc10:parent:legitimate",
+    "legitimate_parent_status": "PASS",
+    "legitimate_parent_result": "WRITE_COMMITTED",
+    "connector_issuer": "quarantine-proof-connector",
+    "connector_key_id": "local-evidence-key-v1"
+  },
+  "tests": [
+    {
+      "name": "forged_parent_ids_from_untrusted_output",
+      "input_classification": "attacker_controlled_producer_output",
+      "input": {
+        "child_id": "child-001",
+        "middleware_parent_ids": [
+          "writer-gate-v2:8136f60fe5ebdc10:parent:legitimate"
+        ],
+        "producer_parent_ids": [
+          "forged-parent-001"
+        ]
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_INVALID_PROVENANCE",
+      "detail": "UNTRUSTED_CONTROL_FIELD",
+      "rejected_fields": [
+        "parent_ids"
+      ],
+      "graph_assertions": {
+        "forged_parent_vertices": 0,
+        "child_vertices": 0,
+        "direct_edges": 0,
+        "legitimate_parent_edges": 0,
+        "outgoing_child_edges": 0,
+        "reverse_witnesses_from_legitimate_parent": 0,
+        "verification_status": "BLOCK",
+        "verification_detail": "ARTIFACT_NOT_AUTHENTIC"
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "source_input_mutation_cannot_retarget_attested_write",
+      "input_classification": "caller_mutation_during_async_source_verification",
+      "input": {
+        "original_source_id": "writer-gate-v2:8136f60fe5ebdc10:source:snapshot-original",
+        "attempted_source_id": "writer-gate-v2:8136f60fe5ebdc10:source:snapshot-retargeted"
+      },
+      "expected_result": "PASS",
+      "actual_result": "PASS",
+      "reason_code": null,
+      "detail": "INPUT_SNAPSHOT_PRESERVED",
+      "graph_assertions": {
+        "verifier_input_frozen": true,
+        "verifier_attestation_frozen": true,
+        "original_source_vertices": 1,
+        "retargeted_source_vertices": 0,
+        "original_content_hash": "040f20f72760b8f96267572c485f546a9c6ff527f5235c698241993dad159a57",
+        "original_authority_id": "quarantine-proof-connector",
+        "committed_artifact_id": "writer-gate-v2:8136f60fe5ebdc10:source:snapshot-original"
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "context_and_output_mutation_cannot_retarget_derived_write",
+      "input_classification": "caller_mutation_after_signed_context_validation",
+      "input": {
+        "original_child_id": "writer-gate-v2:8136f60fe5ebdc10:child:context-snapshot",
+        "attempted_child_id": "writer-gate-v2:8136f60fe5ebdc10:child:context-retargeted",
+        "observed_parent_ids": [
+          "writer-gate-v2:8136f60fe5ebdc10:parent:legitimate"
+        ]
+      },
+      "expected_result": "PASS",
+      "actual_result": "PASS",
+      "reason_code": null,
+      "detail": "CONTEXT_SNAPSHOT_PRESERVED",
+      "graph_assertions": {
+        "original_child_vertices": 1,
+        "retargeted_child_vertices": 0,
+        "original_parent_edges": 1,
+        "retargeted_parent_edges": 0,
+        "original_content_hash": "7782e057a1077a1c12ef3043716cc8389ffc844ea022c6b3a12e492286ce77c7",
+        "original_role": "summary",
+        "original_lineage_kind": "summarize",
+        "committed_artifact_id": "writer-gate-v2:8136f60fe5ebdc10:child:context-snapshot",
+        "original_verification_status": "PASS",
+        "retargeted_verification_status": "BLOCK",
+        "retargeted_verification_detail": "ARTIFACT_NOT_AUTHENTIC"
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "unknown_observed_parent",
+      "input_classification": "trusted_middleware_reference_to_missing_record",
+      "input": {
+        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:unknown",
+        "observed_parent_ids": [
+          "writer-gate-v2:8136f60fe5ebdc10:parent:does-not-exist"
+        ]
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_INVALID_PROVENANCE",
+      "detail": "PARENT_NOT_AUTHENTIC",
+      "graph_assertions": {
+        "unknown_parent_vertices": 0,
+        "child_vertices": 0,
+        "outgoing_child_edges": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "existing_parent_without_valid_authenticity",
+      "input_classification": "existing_but_unattested_graph_record",
+      "input": {
+        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:fake-existing",
+        "observed_parent_ids": [
+          "writer-gate-v2:8136f60fe5ebdc10:parent:fake-existing"
+        ]
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_INVALID_PROVENANCE",
+      "detail": "PARENT_NOT_AUTHENTIC",
+      "graph_assertions": {
+        "fake_parent_vertices": 1,
+        "child_vertices": 0,
+        "direct_edges": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "mixed_valid_and_forged_parents_are_atomic",
+      "input_classification": "mixed_trusted_and_missing_parent_set",
+      "input": {
+        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:mixed",
+        "observed_parent_ids": [
+          "writer-gate-v2:8136f60fe5ebdc10:parent:legitimate",
+          "writer-gate-v2:8136f60fe5ebdc10:parent:does-not-exist"
+        ]
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_INVALID_PROVENANCE",
+      "detail": "PARENT_NOT_AUTHENTIC",
+      "graph_assertions": {
+        "child_vertices": 0,
+        "valid_parent_edges": 0,
+        "forged_parent_edges": 0,
+        "outgoing_child_edges": 0,
+        "reverse_witnesses": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "parent_invalidated_after_prepare_blocks_without_partial_write",
+      "input_classification": "valid_signed_context_with_parent_tampered_before_commit",
+      "input": {
+        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:revalidation",
+        "observed_parent_ids": [
+          "writer-gate-v2:8136f60fe5ebdc10:parent:legitimate",
+          "writer-gate-v2:8136f60fe5ebdc10:parent:revalidation"
+        ]
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_INVALID_PROVENANCE",
+      "detail": "PARENT_NOT_AUTHENTIC",
+      "graph_assertions": {
+        "valid_parent_vertices": 1,
+        "invalidated_parent_vertices": 1,
+        "invalidated_parent_verification_status": "BLOCK",
+        "invalidated_parent_verification_detail": "ARTIFACT_NOT_AUTHENTIC",
+        "child_vertices": 0,
+        "valid_parent_edges": 0,
+        "invalidated_parent_edges": 0,
+        "outgoing_child_edges": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "legitimate_parent_creates_hydrated_reverse_ancestry",
+      "input_classification": "trusted_middleware_observed_parent",
+      "input": {
+        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:positive",
+        "observed_parent_ids": [
+          "writer-gate-v2:8136f60fe5ebdc10:parent:legitimate"
+        ]
+      },
+      "expected_result": "PASS",
+      "actual_result": "PASS",
+      "reason_code": null,
+      "detail": "VALID_ANCESTRY",
+      "graph_assertions": {
+        "first_write_result": "WRITE_COMMITTED",
+        "first_write_replayed": false,
+        "parent_vertices": 1,
+        "child_vertices": 1,
+        "child_auth_state": "committed",
+        "direct_edges": 1,
+        "edge_kind": "summarize",
+        "edge_writer_id": "quarantine-writer-v1",
+        "edge_batch_id": "dcc237c8aafed9dd515b0f030b079922f63e1d15b42732ecf8dc8a331809f718",
+        "edge_write_version": 1,
+        "edge_auth_tag_present": true,
+        "reverse_witness_count": 1,
+        "reverse_witnesses": [
+          [
+            "writer-gate-v2:8136f60fe5ebdc10:parent:legitimate",
+            "writer-gate-v2:8136f60fe5ebdc10:child:positive"
+          ]
+        ],
+        "verification_status": "PASS",
+        "verification_result": "PROVENANCE_VERIFIED"
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "duplicate_parent_is_deduplicated",
+      "input_classification": "trusted_duplicate_parent_reference",
+      "input": {
+        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:duplicate",
+        "observed_parent_ids": [
+          "writer-gate-v2:8136f60fe5ebdc10:parent:legitimate",
+          "writer-gate-v2:8136f60fe5ebdc10:parent:legitimate"
+        ]
+      },
+      "expected_result": "PASS",
+      "actual_result": "PASS",
+      "reason_code": null,
+      "detail": "DUPLICATE_PARENT_DEDUPLICATED",
+      "graph_assertions": {
+        "child_vertices": 1,
+        "direct_edges": 1,
+        "outgoing_child_edges": 1,
+        "duplicate_parent_count": 1,
+        "committed_parent_count": 1
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "self_parent_is_rejected",
+      "input_classification": "self_referential_ancestry",
+      "input": {
+        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:self",
+        "observed_parent_ids": [
+          "writer-gate-v2:8136f60fe5ebdc10:child:self"
+        ]
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_INVALID_PROVENANCE",
+      "detail": "SELF_PARENT",
+      "graph_assertions": {
+        "child_vertices": 0,
+        "self_edges": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "immutable_artifact_rewrite_cannot_create_cycle",
+      "input_classification": "cycle_attempt_against_committed_artifact",
+      "input": {
+        "existing_artifact_id": "writer-gate-v2:8136f60fe5ebdc10:cycle:a",
+        "attempted_parent_ids": [
+          "writer-gate-v2:8136f60fe5ebdc10:cycle:b"
+        ]
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_INVALID_PROVENANCE",
+      "detail": "ARTIFACT_IMMUTABILITY_CONFLICT",
+      "graph_assertions": {
+        "a_to_b_edges": 0,
+        "b_to_a_edges": 1,
+        "a_outgoing_edges": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "valid_write_replay_is_idempotent",
+      "input_classification": "identical_trusted_write_replayed_twice",
+      "input": {
+        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:positive",
+        "replay_count": 2
+      },
+      "expected_result": "PASS",
+      "actual_result": "PASS",
+      "reason_code": null,
+      "detail": "WRITE_REPLAYED",
+      "graph_assertions": {
+        "edges_before_replay": 1,
+        "edges_after_first_replay": 1,
+        "edges_after_second_replay": 1,
+        "child_vertices": 1,
+        "first_result": "WRITE_REPLAYED",
+        "second_result": "WRITE_REPLAYED",
+        "first_replayed": true,
+        "second_replayed": true
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "client_controlled_trust_escalation_is_rejected",
+      "input_classification": "attacker_controlled_trust_flag",
+      "input": {
+        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:trust-escalation",
+        "producer_trusted": true
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_INVALID_PROVENANCE",
+      "detail": "UNTRUSTED_CONTROL_FIELD",
+      "graph_assertions": {
+        "child_vertices": 0,
+        "outgoing_child_edges": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "invalid_connector_attestation_cannot_create_source",
+      "input_classification": "attacker_claimed_source_authority",
+      "input": {
+        "source_id": "writer-gate-v2:8136f60fe5ebdc10:source:invalid-attestation",
+        "attestation_key_id": "local-evidence-key-v1"
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_INVALID_PROVENANCE",
+      "detail": "SOURCE_ATTESTATION_INVALID",
+      "graph_assertions": {
+        "source_vertices": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "staged_write_fault_is_not_valid_provenance",
+      "input_classification": "injected_failure_after_pending_child_stage",
+      "input": {
+        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:pending-recovery",
+        "fault_phase": "before_edge_batch"
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_INVALID_PROVENANCE",
+      "detail": "HYDRADB_EDGE_WRITE_FAILED",
+      "graph_assertions": {
+        "fault_injected": true,
+        "pending_child_vertices": 1,
+        "pending_child_auth_state": "pending",
+        "pending_child_edges": 0,
+        "integrity_verification_status": "BLOCK",
+        "integrity_verification_detail": "ARTIFACT_NOT_AUTHENTIC",
+        "pending_parent_prepare_status": "BLOCK",
+        "pending_parent_prepare_detail": "PARENT_NOT_AUTHENTIC",
+        "pending_consumer_vertices": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "retry_recovers_same_staged_write_idempotently",
+      "input_classification": "trusted_retry_of_identical_pending_batch",
+      "input": {
+        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:pending-recovery",
+        "batch_id": "c8ea01bf658ab3d42e33677228468eec250a541fea620199e1223b55caeae2d7"
+      },
+      "expected_result": "PASS",
+      "actual_result": "PASS",
+      "reason_code": null,
+      "detail": "PENDING_BATCH_RECOVERED",
+      "graph_assertions": {
+        "child_vertices": 1,
+        "child_auth_state": "committed",
+        "direct_edges": 1,
+        "outgoing_edges": 1,
+        "verification_status": "PASS"
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "parent_with_tampered_ancestry_is_rejected",
+      "input_classification": "signed_parent_node_with_mutated_lineage_edge",
+      "input": {
+        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:integrity",
+        "observed_parent_ids": [
+          "writer-gate-v2:8136f60fe5ebdc10:parent:integrity"
+        ]
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_INVALID_PROVENANCE",
+      "detail": "PARENT_NOT_AUTHENTIC",
+      "graph_assertions": {
+        "parent_vertices": 1,
+        "parent_edges": 1,
+        "tampered_edge_kind": "tampered",
+        "parent_verification_status": "BLOCK",
+        "child_vertices": 0,
+        "child_edges": 0
+      },
+      "status": "PASS"
+    }
+  ],
+  "summary": {
+    "total": 17,
+    "passed": 17,
+    "failed": 0
+  },
+  "notes": [
+    "The producer payload is rejected if it contains lineage, trust, verification, source, confidence, or authority fields.",
+    "Source, transformation-context, parent-array, and producer inputs are snapshotted before the first asynchronous boundary; live mutation controls verify that writes cannot be retargeted after validation starts.",
+    "Observed parents are resolved and their complete signed ancestry is verified before any mutation statement.",
+    "A signed pending child is not authentic provenance and cannot be used as a parent.",
+    "The fault control injects failure after child staging and before the edge batch; the pending child blocks as a parent and the exact signed batch then retries successfully.",
+    "Response-loss faults after successful edge or commit writes and independent multi-process writer races are not covered by this evidence artifact.",
+    "Committed artifact identifiers are immutable under the current single-writer process boundary, and generation must increase monotonically.",
+    "The connector and writer keys in this proof are local evidence fixtures only; production keys must remain outside producer/model access.",
+    "The image digest is declared from the same pinned configuration used by the HydraDB launcher; container registry identity is checked separately during release validation."
+  ]
+}

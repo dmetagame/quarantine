@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en" data-api-base="">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#070a0d">
+    <meta name="description" content="Quarantine verifies graph provenance before an AI-generated action is allowed to execute.">
+    <title>QUARANTINE / Verify before action</title>
+    <link rel="stylesheet" href="/public/styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#live-demo">Skip to live demo</a>
+
+    <header class="site-header" aria-label="Quarantine header">
+      <a class="brand" href="#top" aria-label="Quarantine home">
+        <span class="brand-mark" aria-hidden="true">Q</span>
+        <span class="brand-name">QUARANTINE</span>
+      </a>
+      <div class="header-status">
+        <span class="system-chip">HYDRADB 0.1.1</span>
+        <span id="connectionBadge" class="connection-badge status-neutral" role="status">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="connectionText">CONNECTING</span>
+        </span>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="kicker"><span>AI ACTION SAFETY LAYER</span><span>FAIL CLOSED BY DEFAULT</span></p>
+          <h1 id="hero-title">Verify the context.<br>Prove the lineage.<br><em>Then let the agent act.</em></h1>
+          <p class="hero-summary">
+            Quarantine uses HydraDB provenance graphs to determine whether an AI-generated action is backed by trustworthy, resolvable evidence. If the lineage cannot be proven, the action is blocked.
+          </p>
+        </div>
+
+        <aside class="authority-card" aria-label="Quarantine authority model">
+          <p class="micro-label">WHO GETS THE FINAL VOTE?</p>
+          <div class="authority-row">
+            <span class="authority-index">01</span>
+            <div><strong>AI proposes context</strong><p>It may interpret evidence, but cannot declare trust or ancestry.</p></div>
+            <span class="authority-state state-propose">PROPOSE</span>
+          </div>
+          <div class="authority-row">
+            <span class="authority-index">02</span>
+            <div><strong>HydraDB proves lineage</strong><p>The trusted core reconstructs authenticated, multi-hop provenance.</p></div>
+            <span class="authority-state state-verify">VERIFY</span>
+          </div>
+          <div class="authority-row authority-final">
+            <span class="authority-index">03</span>
+            <div><strong>Action gateway decides</strong><p>Deterministic policy returns one outcome: allow or block.</p></div>
+            <span class="authority-state state-decide">DECIDE</span>
+          </div>
+        </aside>
+      </section>
+
+      <section class="pipeline" aria-label="Quarantine authorization pipeline">
+        <div class="pipeline-stage">
+          <span class="pipeline-number">01</span>
+          <div><strong>Evidence</strong><small>Untrusted input</small></div>
+        </div>
+        <span class="pipeline-arrow" aria-hidden="true">→</span>
+        <div class="pipeline-stage pipeline-hydra">
+          <span class="pipeline-number">02</span>
+          <div><strong>Provenance</strong><small>HydraDB lineage</small></div>
+        </div>
+        <span class="pipeline-arrow" aria-hidden="true">→</span>
+        <div class="pipeline-stage">
+          <span class="pipeline-number">03</span>
+          <div><strong>Verification</strong><small>Signed graph state</small></div>
+        </div>
+        <span class="pipeline-arrow" aria-hidden="true">→</span>
+        <div class="pipeline-stage">
+          <span class="pipeline-number">04</span>
+          <div><strong>Policy</strong><small>Deterministic rules</small></div>
+        </div>
+        <span class="pipeline-arrow" aria-hidden="true">→</span>
+        <div class="pipeline-stage pipeline-gate">
+          <span class="pipeline-number">05</span>
+          <div><strong>Action gate</strong><small>Allow or block</small></div>
+        </div>
+      </section>
+
+      <section id="live-demo" class="demo-section" aria-labelledby="demo-title">
+        <header class="demo-header">
+          <div>
+            <p class="section-label">LIVE SECURITY DECISION</p>
+            <h2 id="demo-title">Two inputs. Same pipeline. Opposite outcomes.</h2>
+            <p id="demoSubtitle">Run the trusted flow, then attack the same boundary with tampered provenance.</p>
+          </div>
+          <div class="scenario-control" role="group" aria-label="Run a demo scenario">
+            <button id="validScenario" class="scenario-button scenario-valid is-selected" type="button" data-scenario="valid" aria-pressed="true">
+              <span class="scenario-icon" aria-hidden="true">✓</span>
+              <span><strong>Run valid scenario</strong><small>Resolved lineage → allow</small></span>
+            </button>
+            <button id="tamperedScenario" class="scenario-button scenario-tampered" type="button" data-scenario="tampered" aria-pressed="false">
+              <span class="scenario-icon" aria-hidden="true">×</span>
+              <span><strong>Run tampered scenario</strong><small>Unresolved lineage → block</small></span>
+            </button>
+          </div>
+        </header>
+
+        <section id="resultBanner" class="result-banner result-neutral" aria-labelledby="action-title" aria-live="polite">
+          <div class="result-verdict">
+            <p class="micro-label">ACTION GATE RESULT</p>
+            <div class="result-title-row">
+              <span id="resultGlyph" class="result-glyph" aria-hidden="true">…</span>
+              <div>
+                <h3 id="action-title"><span id="actionOutcome">Verifying live provenance</span></h3>
+                <p id="actionDetail">The adapter cannot run until HydraDB provenance, trusted state, policy, freshness, and replay checks pass.</p>
+              </div>
+            </div>
+          </div>
+          <dl class="result-summary" aria-label="Current security decision summary">
+            <div><dt>Provenance</dt><dd id="summaryProvenance">VERIFYING</dd></div>
+            <div><dt>Policy</dt><dd id="summaryPolicy">WAITING</dd></div>
+            <div><dt>Gateway</dt><dd id="summaryGateway">WAITING</dd></div>
+            <div class="adapter-count"><dt>Adapter invocations</dt><dd id="adapterCalls">0</dd></div>
+          </dl>
+          <dl class="result-action-meta">
+            <div><dt>Action</dt><dd id="actionType">-</dd></div>
+            <div><dt>Destination</dt><dd id="actionDestination">-</dd></div>
+          </dl>
+        </section>
+
+        <div class="demo-grid">
+          <article class="surface evidence-panel" aria-labelledby="evidence-title">
+            <header class="surface-header">
+              <div>
+                <span class="surface-step">01</span>
+                <p class="micro-label">INCOMING EVIDENCE</p>
+                <h3 id="evidence-title">What the agent wants to act on</h3>
+              </div>
+              <span id="evidenceBadge" class="state-pill state-neutral">UNTRUSTED</span>
+            </header>
+
+            <div class="claim-block">
+              <span class="micro-label">CLAIM</span>
+              <p id="evidenceClaim">Waiting for the trusted demo runner…</p>
+            </div>
+            <dl class="evidence-fields">
+              <div><dt>Source</dt><dd id="evidenceSource">-</dd></div>
+              <div><dt>Entity</dt><dd id="evidenceEntity">-</dd></div>
+              <div><dt>Received</dt><dd id="evidenceReceived">-</dd></div>
+              <div><dt>Input state</dt><dd id="evidenceClassification">-</dd></div>
+            </dl>
+
+            <div id="attackProbe" class="attack-probe" hidden>
+              <div class="attack-probe-header">
+                <span class="attack-shield" aria-hidden="true">!</span>
+                <div><span class="micro-label">DEFENSE 1 / WRITE BOUNDARY</span><strong>Forged parent claim rejected</strong></div>
+                <span id="attackProbeStatus" class="probe-status">BLOCK</span>
+              </div>
+              <p id="attackProbeReason">The producer cannot declare its own parent IDs.</p>
+              <dl>
+                <div><dt>Forged child vertices</dt><dd id="attackChildCount">0</dd></div>
+                <div><dt>Forged parent vertices</dt><dd id="attackParentCount">0</dd></div>
+                <div><dt>Edge created</dt><dd id="attackEdgeCreated">NO</dd></div>
+              </dl>
+            </div>
+
+            <div class="boundary-note">
+              <span>AI boundary</span>
+              <p>The producer supplies content only. It cannot submit trust, verification, policy, ancestry, or an adapter.</p>
+            </div>
+          </article>
+
+          <article class="surface graph-panel" aria-labelledby="graph-panel-title">
+            <header class="surface-header">
+              <div>
+                <span class="surface-step">02</span>
+                <p class="micro-label">HYDRADB PROVENANCE</p>
+                <h3 id="graph-panel-title">Trace the evidence to its sources</h3>
+              </div>
+              <span id="graphState" class="state-pill state-neutral">WAITING</span>
+            </header>
+
+            <dl class="graph-metrics" aria-label="Live HydraDB graph metrics">
+              <div><dt>Nodes</dt><dd id="metricNodes">-</dd></div>
+              <div><dt>Edges</dt><dd id="metricEdges">-</dd></div>
+              <div><dt>Witnesses</dt><dd id="metricWitnesses">-</dd></div>
+              <div><dt>Paths</dt><dd id="metricPaths">-</dd></div>
+              <div><dt>Observed depth</dt><dd id="metricDepth">-</dd></div>
+              <div><dt>Auth bound</dt><dd id="metricBound">-</dd></div>
+            </dl>
+
+            <div class="graph-frame">
+              <svg id="provenanceGraph" viewBox="0 0 760 390" role="img" aria-labelledby="graphTitle graphDescription" focusable="false">
+                <title id="graphTitle">Live HydraDB provenance graph</title>
+                <desc id="graphDescription">The graph is populated from the trusted server response.</desc>
+                <g id="graphEdges"></g>
+                <g id="graphNodes"></g>
+              </svg>
+              <div id="graphEmpty" class="graph-empty">
+                <span class="empty-glyph" aria-hidden="true">◇</span>
+                <p>Querying the live HydraDB provenance closure.</p>
+              </div>
+            </div>
+
+            <div class="graph-legend" aria-label="Graph legend">
+              <span><i class="legend-dot source" aria-hidden="true"></i>trusted source</span>
+              <span><i class="legend-dot derived" aria-hidden="true"></i>derived evidence</span>
+              <span><i class="legend-dot action" aria-hidden="true"></i>action argument</span>
+              <span><i class="legend-line" aria-hidden="true"></i>displayed source → action</span>
+            </div>
+            <p id="directionNote" class="direction-note">Displayed source-to-action for readability; HydraDB stores child-to-parent DERIVES_FROM edges.</p>
+            <div id="frontierNotice" class="frontier-notice" hidden>
+              <span class="frontier-icon" aria-hidden="true">×</span>
+              <div><span class="micro-label">DEFENSE 2 / AUTHORIZATION BOUND</span><strong>Observed graph exceeds the permitted ancestry depth</strong><p id="frontierDetail">The gateway fails closed when a required terminal source is beyond its bound.</p></div>
+            </div>
+            <div id="witnessSummary" class="witness-summary" aria-live="polite">No provenance witnesses loaded.</div>
+          </article>
+
+          <article class="surface decision-panel" aria-labelledby="decision-title">
+            <header class="surface-header">
+              <div>
+                <span class="surface-step">03</span>
+                <p class="micro-label">DETERMINISTIC DECISION</p>
+                <h3 id="decision-title">The model does not authorize this</h3>
+              </div>
+              <span id="decisionBadge" class="state-pill state-neutral">WAITING</span>
+            </header>
+
+            <section class="gateway-section" aria-labelledby="gateway-title">
+              <div class="decision-section-header">
+                <div><span class="micro-label">FINAL SECURITY BOUNDARY</span><h4 id="gateway-title">Action gateway</h4></div>
+                <span id="gatewayStatus" class="section-status status-neutral-text">NOT RUN</span>
+              </div>
+              <div id="gatewayOutcome" class="gateway-outcome gateway-neutral">
+                <span class="gateway-symbol" aria-hidden="true">…</span>
+                <div><strong>Awaiting graph verification</strong><span>Action adapter has not been called.</span></div>
+              </div>
+            </section>
+
+            <section class="decision-section" aria-labelledby="provenance-check-title">
+              <div class="decision-section-header">
+                <h4 id="provenance-check-title">Provenance verification</h4>
+                <span id="verificationStatus" class="section-status status-neutral-text">NOT RUN</span>
+              </div>
+              <ul id="verificationChecks" class="check-list">
+                <li class="check-item check-neutral"><span class="check-icon" aria-hidden="true">·</span><span>Waiting for live graph state</span><strong>-</strong></li>
+              </ul>
+              <p id="verificationDetail" class="decision-detail">The trusted verifier waits for a graph-backed result.</p>
+            </section>
+
+            <section class="decision-section policy-section" aria-labelledby="policy-title">
+              <div class="decision-section-header">
+                <h4 id="policy-title">Deterministic policy</h4>
+                <span id="policyStatus" class="section-status status-neutral-text">NOT RUN</span>
+              </div>
+              <ul class="policy-requirements" aria-label="Policy requirements">
+                <li>Verified trusted state</li>
+                <li>Allowed source authority</li>
+                <li>Internal destination</li>
+                <li>Fresh request</li>
+                <li>No replay</li>
+              </ul>
+              <p id="policyDetail" class="decision-detail">Policy is evaluated only after provenance verification succeeds.</p>
+            </section>
+          </article>
+        </div>
+
+        <section class="timeline-panel" aria-labelledby="timeline-title">
+          <header class="timeline-header">
+            <div><p class="micro-label">SERVER EXECUTION TRACE</p><h3 id="timeline-title">What actually happened</h3></div>
+            <span id="traceStatus" class="trace-note">No run yet</span>
+          </header>
+          <ol id="timeline" class="timeline-list" aria-live="polite">
+            <li class="timeline-empty">The trusted execution trace will appear after a run.</li>
+          </ol>
+        </section>
+      </section>
+
+      <section class="why-section" aria-labelledby="why-title">
+        <div class="why-heading">
+          <p class="section-label">WHY HYDRADB?</p>
+          <h2 id="why-title">Similarity is not provenance.</h2>
+          <p>Vector search can find information that looks relevant. Quarantine needs a stronger answer: can this proposed action be traced through a valid chain of authenticated evidence?</p>
+        </div>
+        <div class="why-comparison">
+          <div class="comparison-row comparison-weak">
+            <span class="comparison-label">RETRIEVAL</span>
+            <p>“This text looks related.”</p>
+            <strong>Not enough to act</strong>
+          </div>
+          <div class="comparison-row comparison-strong">
+            <span class="comparison-label">HYDRADB PROVENANCE</span>
+            <p>“These signed relationships form a resolved lineage to trusted sources.”</p>
+            <strong>Can enter policy</strong>
+          </div>
+        </div>
+        <div class="why-statement">
+          <span>HydraDB is not a storage plugin.</span>
+          <strong>It is part of the authorization path.</strong>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>QUARANTINE / HACK HYDRA 2026</span>
+      <span id="implementationMeta">Browser is presentation only. Authorization remains server-side.</span>
+    </footer>
+
+    <div id="liveRegion" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+    <noscript><div class="noscript-warning">JavaScript is required to run the live HydraDB verification demo.</div></noscript>
+    <script type="module" src="/public/app.js"></script>
+  </body>
+</html>

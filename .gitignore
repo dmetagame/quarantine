@@ -1,0 +1,15 @@
+.hydradb-data/
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+coverage/
+.DS_Store
+evidence/latest-proof.json
+evidence/latest-provenance-writer-proof.json
+evidence/latest-action-gateway-proof.json
+evidence/latest-end-to-end-demo-proof.json

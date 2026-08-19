@@ -1,0 +1,97 @@
+{
+  "status": "PASS",
+  "recorded_at": "2026-08-17T14:35:56.121Z",
+  "container": "quarantine-hydradb",
+  "image": "ghcr.io/hydra-db/hydradb:0.1.1",
+  "image_digest": "sha256:db78309a233be54662db29744047e985a39b51c45a270d1a1f47c31a62cdb709",
+  "hydradb": {
+    "http": "http://127.0.0.1:18443",
+    "admin": "http://127.0.0.1:19091",
+    "graph": "default",
+    "namespace": "default",
+    "cell": "cell-0"
+  },
+  "batch_ingestion": {
+    "vertices": 13,
+    "relationships": 11,
+    "vertex_write_ms": 76.3,
+    "relationship_write_ms": 69.46,
+    "bookmarks": [
+      "sgk:1:64656661756c74:64656661756c74:63656c6c2d30:6",
+      "sgk:1:64656661756c74:64656661756c74:63656c6c2d30:7"
+    ]
+  },
+  "batch_throughput_probe": {
+    "vertex_batch": {
+      "rows": 512,
+      "request_bytes": 29694,
+      "elapsed_ms": 111.66,
+      "bookmark": "sgk:1:64656661756c74:64656661756c74:63656c6c2d30:7"
+    },
+    "relationship_batch": {
+      "rows": 511,
+      "request_bytes": 31936,
+      "elapsed_ms": 382.27,
+      "bookmark": "sgk:1:64656661756c74:64656661756c74:63656c6c2d30:8"
+    },
+    "verified_counts": {
+      "vertices": 512,
+      "relationships": 511,
+      "read_epoch": 8
+    }
+  },
+  "indexed_reverse_mspaths": {
+    "query_ms": 53.03,
+    "witness_count": 4,
+    "required_pairs": [
+      "source:external -> action:poisoned",
+      "source:external -> action:mixed",
+      "source:catalog -> action:safe",
+      "source:catalog -> action:mixed"
+    ],
+    "returned_edge_kinds": [
+      "assert",
+      "require",
+      "summarize",
+      "support"
+    ],
+    "witnesses": [
+      [
+        "source:external",
+        "summary:external:1",
+        "summary:external:2",
+        "action:poisoned"
+      ],
+      [
+        "source:external",
+        "summary:external:1",
+        "summary:external:2",
+        "action:mixed"
+      ],
+      [
+        "source:catalog",
+        "claim:catalog",
+        "action:safe"
+      ],
+      [
+        "source:catalog",
+        "claim:catalog",
+        "action:mixed"
+      ]
+    ],
+    "read_epoch": 8
+  },
+  "depth_cap": {
+    "terminal_paths_with_max_len_3": 0,
+    "deepest_frontier_hops": 3,
+    "frontier_key": "deep:1",
+    "frontier_generation": 1,
+    "decision": "BLOCK_UNRESOLVED_ANCESTRY"
+  },
+  "notes": [
+    "Timings are local cold-path observations, not benchmark claims.",
+    "HydraDB property indexes are maintained automatically by canonical writes.",
+    "Incoming witnesses preserve each relationship's stored child-to-parent src/dst orientation.",
+    "The throughput probe is idempotent and verifies exact stored counts after each run."
+  ]
+}

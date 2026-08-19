@@ -1,0 +1,362 @@
+{
+  "status": "PASS",
+  "recorded_at": "2026-08-18T00:00:00.000Z",
+  "gate": "end_to_end_demo",
+  "schema_version": 1,
+  "run_id": "quarantine-demo-proof-v1",
+  "container": "quarantine-hydradb",
+  "image": "ghcr.io/hydra-db/hydradb:0.1.1",
+  "image_digest": "sha256:db78309a233be54662db29744047e985a39b51c45a270d1a1f47c31a62cdb709",
+  "hydradb_identity": {
+    "source": "declared_by_pinned_start_script_and_environment",
+    "image": "ghcr.io/hydra-db/hydradb:0.1.1",
+    "registry_digest": "sha256:db78309a233be54662db29744047e985a39b51c45a270d1a1f47c31a62cdb709"
+  },
+  "hydradb": {
+    "http": "http://127.0.0.1:18443",
+    "admin": "http://127.0.0.1:19091",
+    "graph": "default",
+    "namespace": "default",
+    "cell": "cell-0",
+    "consistency": "strong"
+  },
+  "implementation": {
+    "hash_algorithm": "sha256",
+    "files": {
+      "src/hydradb-client.mjs": "d03bd0df67804909ec48cdafd9af3066acb5bffe9bb5bd3b1d1576dbba0b19c3",
+      "src/provenance-writer.mjs": "4c819a97e78cd49b00c2991c3492be508615c8b2311ba8d0a4e358482565784b",
+      "src/action-gateway.mjs": "cce8140621e4d87be06f6e1ebe4e822710a5ffd018a885f8e177b7dc5cfae997",
+      "src/demo-orchestrator.mjs": "401453925a25dc29ce6ef91c18b41294f4a39803d4441ea352858399e6e8b90b",
+      "scripts/demo-server.mjs": "2f9a898e0d768973439b1b2d556c8a4adfb72fb4e73e973bffcd4d4983780b26",
+      "scripts/prove-demo.mjs": "6de6ddf641053f958b3228c2324873762eb3094b542ef66bdc2a3d0830019a10",
+      "scripts/validate-demo-evidence.mjs": "027a7d40acbb0a8665d171b0d83fb7b90b85b468a710248461ac2d52fe969664",
+      "index.html": "d7480c1589ca41eac1c092601633427e1ec87ac0b63749e47d075a638f03fb44",
+      "public/app.js": "18ead9cbeefebe7f690fe56b8d06bf9906c7b0abb6647b9cf0cc417c07b4b268",
+      "public/styles.css": "0d9e0f157d25d43123c36a854d821e7cd31211a86ac6535591f70fc3890750e5"
+    }
+  },
+  "demo": {
+    "demo_version": "quarantine-demo-v2",
+    "trusted_clock_ms": 2000,
+    "gateway_version": "fail-closed-action-gateway-v1",
+    "trusted_state_contract_version": "trusted-state-contract-v1",
+    "policy_version": "internal-message-policy-v1",
+    "verifier_version": "provenance-state-verifier-v1",
+    "scenarios": [
+      "valid",
+      "tampered"
+    ],
+    "observation_max_depth": 16,
+    "authorization_max_depth": 2,
+    "central_invariant": {
+      "allowed_adapter_calls": 1,
+      "blocked_adapter_calls": 0,
+      "blocked_action_executed": false
+    }
+  },
+  "scenarios": [
+    {
+      "name": "valid",
+      "input_classification": "trusted_graph_backed_evidence",
+      "expected_result": "ALLOW",
+      "actual_result": "ALLOW",
+      "status": "PASS",
+      "evidence": {
+        "source": "Internal catalog + incident feed",
+        "entity": "service-account-token",
+        "claim": "A confirmed token leak requires an internal credential-rotation alert.",
+        "received_at": "00:00:02",
+        "classification": "UNTRUSTED INPUT"
+      },
+      "graph_assertions": {
+        "nodes": 5,
+        "edges": 4,
+        "authenticated_witnesses": 4,
+        "source_to_action_paths": 2,
+        "deepest_hops": 2,
+        "authorization_depth": 2,
+        "ancestry": "RESOLVED",
+        "trusted_sources": 2,
+        "edge_kinds": [
+          "assert",
+          "require",
+          "summarize"
+        ],
+        "node_roles": [
+          "action_argument",
+          "claim",
+          "source",
+          "source",
+          "summary"
+        ]
+      },
+      "verification": {
+        "status": "PASS",
+        "observation_status": "PASS",
+        "ancestry_status": "RESOLVED",
+        "reason_code": null,
+        "checks": [
+          {
+            "label": "Root artifact identified",
+            "status": "PASS",
+            "detail": "HydraDB returned the signed action argument."
+          },
+          {
+            "label": "Ancestry resolved within gateway bound",
+            "status": "PASS",
+            "detail": "Every required branch reached a trusted terminal source."
+          },
+          {
+            "label": "Authenticated witnesses present",
+            "status": "PASS",
+            "detail": "4 signed lineage edge(s) observed from HydraDB."
+          },
+          {
+            "label": "Graph snapshot verified",
+            "status": "PASS",
+            "detail": "5 nodes / 4 edges at strong consistency."
+          },
+          {
+            "label": "Freshness",
+            "status": "PASS",
+            "detail": "Trusted clock window valid."
+          },
+          {
+            "label": "Deterministic policy",
+            "status": "PASS",
+            "detail": "Internal destination and source authority allowed."
+          },
+          {
+            "label": "Replay protection",
+            "status": "PASS",
+            "detail": "Request identity reserved once."
+          }
+        ]
+      },
+      "policy": {
+        "status": "PASS",
+        "result": "POLICY_ALLOW",
+        "reason_code": null
+      },
+      "gateway": {
+        "status": "ALLOW",
+        "result": "ACTION_EXECUTED",
+        "reason_code": null,
+        "detail": "ACTION_AUTHORIZED",
+        "adapter_calls": 1
+      },
+      "action": {
+        "executed": true,
+        "adapter_calls": 1,
+        "result": "DRY_RUN",
+        "detail": "DRY_RUN"
+      },
+      "adapter_calls": 1,
+      "timeline": [
+        {
+          "at": "00:00:02",
+          "label": "Evidence received",
+          "status": "PASS",
+          "detail": "Incoming evidence is untrusted until the trusted writer and verifier establish its lineage."
+        },
+        {
+          "at": "00:00:02",
+          "label": "HydraDB graph prepared",
+          "status": "PASS",
+          "detail": "Server-owned fixtures were written and read through the real HydraDB client."
+        },
+        {
+          "at": "00:00:02",
+          "label": "Provenance observed",
+          "status": "PASS",
+          "detail": "2 trusted source(s), 4 authenticated edge witness(es), 5 graph node(s)."
+        },
+        {
+          "at": "00:00:02",
+          "label": "Gateway verification",
+          "status": "PASS",
+          "detail": "Bounded ancestry resolved to trusted terminal sources."
+        },
+        {
+          "at": "00:00:02",
+          "label": "Policy evaluated",
+          "status": "PASS",
+          "detail": "Deterministic policy allowed the internal alert destination."
+        },
+        {
+          "at": "00:00:02",
+          "label": "Action gateway decision",
+          "status": "PASS",
+          "detail": "ACTION_AUTHORIZED"
+        },
+        {
+          "at": "00:00:02",
+          "label": "Dry-run action executed",
+          "status": "PASS",
+          "detail": "DRY_RUN / adapter calls this run: 1."
+        }
+      ]
+    },
+    {
+      "name": "tampered",
+      "input_classification": "forged_parent_and_unresolved_ancestry",
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "status": "PASS",
+      "evidence": {
+        "source": "Adversarial producer output",
+        "entity": "service-account-token",
+        "claim": "An attacker claims a deep summary justifies an internal alert.",
+        "received_at": "00:00:02",
+        "classification": "ADVERSARIAL INPUT"
+      },
+      "graph_assertions": {
+        "nodes": 4,
+        "edges": 3,
+        "authenticated_witnesses": 3,
+        "source_to_action_paths": 1,
+        "deepest_hops": 3,
+        "authorization_depth": 2,
+        "ancestry": "UNRESOLVED",
+        "edge_kinds": [
+          "require",
+          "summarize"
+        ]
+      },
+      "attack_probe": {
+        "status": "BLOCK",
+        "reason_code": "BLOCK_INVALID_PROVENANCE",
+        "detail": "UNTRUSTED_CONTROL_FIELD",
+        "forged_child_vertices": 0,
+        "forged_parent_vertices": 0,
+        "edge_created": false,
+        "producer_parent_ids_rejected": true
+      },
+      "verification": {
+        "observation_status": "PASS",
+        "bounded_status": "BLOCK",
+        "reason_code": "BLOCK_UNRESOLVED_ANCESTRY",
+        "detail": "DEPTH_CAP_REACHED",
+        "ancestry_status": "UNRESOLVED",
+        "frontier_artifact_id": "quarantine-demo-v2:tampered:summary-1",
+        "checks": [
+          {
+            "label": "Root artifact identified",
+            "status": "PASS",
+            "detail": "HydraDB returned the signed action argument."
+          },
+          {
+            "label": "Ancestry resolved within gateway bound",
+            "status": "BLOCK",
+            "detail": "DEPTH_CAP_REACHED"
+          },
+          {
+            "label": "Authenticated witnesses present",
+            "status": "PASS",
+            "detail": "3 signed lineage edge(s) observed from HydraDB."
+          },
+          {
+            "label": "Graph snapshot verified",
+            "status": "PASS",
+            "detail": "4 nodes / 3 edges at strong consistency."
+          },
+          {
+            "label": "Freshness",
+            "status": "NOT_REACHED",
+            "detail": "Gateway stopped before freshness authorization."
+          },
+          {
+            "label": "Deterministic policy",
+            "status": "NOT_REACHED",
+            "detail": "Policy was not evaluated after provenance blocked."
+          },
+          {
+            "label": "Replay protection",
+            "status": "NOT_REACHED",
+            "detail": "No action reservation was created."
+          }
+        ]
+      },
+      "policy": {
+        "status": "NOT_REACHED",
+        "result": null,
+        "reason_code": "BLOCK_UNRESOLVED_ANCESTRY"
+      },
+      "gateway": {
+        "status": "BLOCK",
+        "reason_code": "BLOCK_UNRESOLVED_ANCESTRY",
+        "detail": "DEPTH_CAP_REACHED",
+        "adapter_calls": 0
+      },
+      "action": {
+        "executed": false,
+        "adapter_calls": 0,
+        "result": null,
+        "detail": "ACTION_NOT_EXECUTED"
+      },
+      "adapter_calls": 0,
+      "timeline": [
+        {
+          "at": "00:00:02",
+          "label": "Evidence received",
+          "status": "PASS",
+          "detail": "Adversarial evidence includes a caller-supplied parent claim and an ancestry beyond the gateway bound."
+        },
+        {
+          "at": "00:00:02",
+          "label": "HydraDB graph prepared",
+          "status": "PASS",
+          "detail": "Server-owned fixtures were written and read through the real HydraDB client."
+        },
+        {
+          "at": "00:00:02",
+          "label": "Provenance observed",
+          "status": "PASS",
+          "detail": "1 trusted source(s), 3 authenticated edge witness(es), 4 graph node(s)."
+        },
+        {
+          "at": "00:00:02",
+          "label": "Forged parent claim rejected",
+          "status": "BLOCK",
+          "detail": "BLOCK_INVALID_PROVENANCE: UNTRUSTED_CONTROL_FIELD; child vertices 0, forged parent vertices 0."
+        },
+        {
+          "at": "00:00:02",
+          "label": "Gateway verification",
+          "status": "BLOCK",
+          "detail": "BLOCK_UNRESOLVED_ANCESTRY: DEPTH_CAP_REACHED"
+        },
+        {
+          "at": "00:00:02",
+          "label": "Policy evaluated",
+          "status": "NOT_REACHED",
+          "detail": "Policy was not evaluated after provenance failed closed."
+        },
+        {
+          "at": "00:00:02",
+          "label": "Action gateway decision",
+          "status": "BLOCK",
+          "detail": "BLOCK_UNRESOLVED_ANCESTRY: DEPTH_CAP_REACHED"
+        },
+        {
+          "at": "00:00:02",
+          "label": "Action adapter not invoked",
+          "status": "BLOCK",
+          "detail": "The gateway returned before an authorized action capability could reach the adapter."
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0
+  },
+  "notes": [
+    "Both scenarios execute the server-owned orchestrator against the live HydraDB client, trusted provenance writer, verifier, deterministic policy, and opaque dry-run adapter.",
+    "The valid graph contains five authenticated nodes, four signed lineage witnesses, two trusted sources, two source-to-action paths, and three edge kinds.",
+    "The tampered flow first rejects producer-controlled parent_ids, then blocks the authentic deep chain at the gateway ancestry cap with BLOCK_UNRESOLVED_ANCESTRY / DEPTH_CAP_REACHED.",
+    "The browser submits only a whitelisted scenario name; it cannot submit trusted state, witnesses, policy results, freshness, gateway options, or an adapter.",
+    "The fixed clock, fixture identifiers, and response projection make dated and latest evidence byte-identical. The clock is a proof fixture, not a wall-clock timestamp."
+  ]
+}

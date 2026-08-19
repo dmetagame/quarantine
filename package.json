@@ -1,0 +1,22 @@
+{
+  "name": "quarantine",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "check": "node --check src/hydradb-client.mjs && node --check src/provenance-writer.mjs && node --check src/action-gateway.mjs && node --check src/demo-orchestrator.mjs && node --check scripts/demo-server.mjs && node --check public/app.js && node --check scripts/prove-hydradb.mjs && node --check scripts/prove-provenance-writer.mjs && node --check scripts/prove-action-gateway.mjs && node --check scripts/prove-demo.mjs && node --check scripts/validate-evidence.mjs && node --check scripts/validate-action-gateway-evidence.mjs && node --check scripts/validate-demo-evidence.mjs && bash -n scripts/start-hydradb.sh",
+    "proof:hydradb": "node scripts/prove-hydradb.mjs",
+    "test:unit": "node --test test/*.test.mjs",
+    "test:provenance": "node scripts/prove-provenance-writer.mjs",
+    "test:gateway": "node scripts/prove-action-gateway.mjs",
+    "demo": "node scripts/demo-server.mjs",
+    "test:demo": "node scripts/prove-demo.mjs",
+    "proof:demo": "node scripts/prove-demo.mjs",
+    "validate:evidence": "node scripts/validate-evidence.mjs && node scripts/validate-action-gateway-evidence.mjs && node scripts/validate-demo-evidence.mjs",
+    "test": "npm run check && npm run test:unit && npm run proof:hydradb && npm run test:provenance && npm run test:gateway && npm run test:demo && npm run validate:evidence"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
