@@ -1,4 +1,7 @@
 .hydradb-data/
+.hydradb-hosted-data/
+.deploy-secrets/
+.secrets/
 node_modules/
 .env
 .env.*

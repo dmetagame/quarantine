@@ -1,0 +1,14 @@
+.git
+.github
+node_modules
+.hydradb-data
+.hydradb-hosted-data
+.deploy-secrets
+.secrets
+.env
+.env.*
+evidence
+test
+docs
+coverage
+*.log

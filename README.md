@@ -118,6 +118,12 @@ ignored because they are generated outputs.
 The release checklist is in
 [`docs/submission-checklist.md`](docs/submission-checklist.md).
 
+For a hosted judge demo, use the target-neutral Docker deployment in
+[`docs/deployment.md`](docs/deployment.md). It keeps the Node gateway and
+persistent HydraDB on one private host, uses file-backed Docker secrets, and
+requires a real host plus TLS endpoint; submission remains pending until the
+hosted smoke tests are verified.
+
 ## Trust Boundary
 
 The producer/model controls one field:

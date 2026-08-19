@@ -36,9 +36,10 @@ competition ownership.
   scenarios passed. `npm run validate:evidence` passed, and the required
   dated/latest evidence pairs are byte-identical.
 - [x] **Three-minute demo script** - see `docs/demo-script.md`.
-- [ ] **Hosted demo deployment** - PENDING. The local live demo is verified;
-  a public hosting target and HydraDB runtime still need to be selected and
-  deployed before submission.
+- [ ] **Hosted demo deployment** - PENDING. The target-neutral Docker/Compose
+  package is documented in [`docs/deployment.md`](deployment.md), but a public
+  host, TLS endpoint, and live smoke test still need to be authorized and
+  completed before submission.
 - [ ] **Demo video** - NEEDS HUMAN ACTION.
 
 ## Submission
