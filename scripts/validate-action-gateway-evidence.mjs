@@ -24,6 +24,7 @@ const REQUIRED_CASES = Object.freeze([
   "malformed_action_blocks_before_verification",
   "hydradb_verification_failure_blocks",
   "verification_timeout_blocks",
+  "adapter_timeout_is_indeterminate_and_not_retried",
   "blocked_actions_never_reach_adapter",
 ]);
 
@@ -44,6 +45,7 @@ const CASE_CONTRACTS = Object.freeze({
   malformed_action_blocks_before_verification: ["BLOCK", "BLOCK_INVALID_INPUT", "INVALID_ACTION_PARAMETERS"],
   hydradb_verification_failure_blocks: ["BLOCK", "BLOCK_SYSTEM_ERROR", "PROVENANCE_VERIFICATION_FAILED"],
   verification_timeout_blocks: ["BLOCK", "BLOCK_SYSTEM_ERROR", "PROVENANCE_VERIFICATION_TIMEOUT"],
+  adapter_timeout_is_indeterminate_and_not_retried: ["BLOCK", "BLOCK_SYSTEM_ERROR", "ACTION_ADAPTER_TIMEOUT"],
   blocked_actions_never_reach_adapter: ["BLOCK", "BLOCK_MISSING_PROVENANCE", "ADAPTER_NOT_CALLED"],
 });
 
@@ -96,6 +98,7 @@ assert(JSON.stringify(dated.implementation.files) === JSON.stringify(await imple
 assert(dated.hydradb_identity?.image === dated.image, "Action-gateway HydraDB identity is inconsistent");
 assert(dated.hydradb_identity?.registry_digest === dated.image_digest, "Action-gateway registry digest is inconsistent");
 assert(dated.gateway?.verification_timeout_ms === 5_000, "Action-gateway verification timeout changed");
+assert(dated.gateway?.adapter_timeout_ms === 5_000, "Action-gateway adapter timeout changed");
 assert(JSON.stringify(dated.gateway?.allowed_source_authorities) === JSON.stringify(["quarantine-proof-connector"]), "Action-gateway source authority policy changed");
 assert(JSON.stringify(dated.gateway?.allowed_destinations) === JSON.stringify(["internal:alerts"]), "Action-gateway destination policy changed");
 assert(dated.setup?.graph_assertions?.trusted_source_vertices === 1, "Action-gateway proof lost trusted source assertion");
@@ -170,6 +173,13 @@ assert(hydraFailure.graph_assertions?.adapter_calls === 0, "HydraDB failure reac
 
 const timeout = byName.get("verification_timeout_blocks");
 assert(timeout.graph_assertions?.adapter_calls === 0, "Verification timeout reached the adapter");
+
+const adapterTimeout = byName.get("adapter_timeout_is_indeterminate_and_not_retried");
+assert(adapterTimeout.graph_assertions?.adapter_calls === 1, "Timed-out adapter was not invoked exactly once");
+assert(adapterTimeout.graph_assertions?.adapter_timeout_ms === 5, "Adapter timeout evidence lost its deadline");
+assert(adapterTimeout.graph_assertions?.replay_result === "BLOCK", "Timed-out adapter replay was not blocked");
+assert(adapterTimeout.graph_assertions?.replay_reason_code === "BLOCK_SYSTEM_ERROR", "Timed-out adapter replay changed classification");
+assert(adapterTimeout.graph_assertions?.replay_detail === "ACTION_INDETERMINATE", "Timed-out adapter was eligible for retry");
 
 const aggregate = byName.get("blocked_actions_never_reach_adapter");
 assert(aggregate.graph_assertions?.all_blocked === true, "Aggregate blocked paths did not all block");

@@ -91,6 +91,7 @@ function validScenarioEvidence(response) {
   const verification = response.verification;
   const gateway = response.gateway;
   const action = response.action;
+  const actionProof = response.action_proof;
   const sourceCount = verification.source_nodes.length;
   const kinds = sortedKinds(response.graph.edges);
   const nodeRoles = response.graph.nodes.map((node) => node.role).sort();
@@ -119,6 +120,22 @@ function validScenarioEvidence(response) {
   assert(response.policy.status === "PASS", "Valid policy did not pass");
   assert(response.policy.result === "POLICY_ALLOW", "Valid policy result changed");
   assert(action.result?.status === "DRY_RUN", "Valid action did not use the dry-run adapter");
+  assert(actionProof?.version === "action-proof-v1", "Valid action proof is missing");
+  assert(actionProof.decision === gateway.status, "Valid action proof decision changed");
+  assert(actionProof.reason_code === gateway.reason_code, "Valid action proof reason changed");
+  assert(actionProof.detail === gateway.detail, "Valid action proof detail changed");
+  assert(actionProof.action?.type === action.action_type, "Valid action proof type changed");
+  assert(actionProof.action?.destination === action.destination, "Valid action proof destination changed");
+  assert(actionProof.provenance?.ancestry_status === metrics.ancestry_status, "Valid action proof ancestry changed");
+  assert(actionProof.provenance?.source_count === sourceCount, "Valid action proof source count changed");
+  assert(actionProof.provenance?.witness_count === metrics.witness_count, "Valid action proof witness count changed");
+  assert(actionProof.provenance?.independent_paths === metrics.path_count, "Valid action proof path count changed");
+  assert(actionProof.provenance?.deepest_hops === metrics.deepest_hops, "Valid action proof depth changed");
+  assert(actionProof.provenance?.max_depth === metrics.max_depth, "Valid action proof authorization bound changed");
+  assert(actionProof.policy_version === ACTION_POLICY_VERSION, "Valid action proof policy version changed");
+  assert(typeof actionProof.authorization_id === "string", "Valid action proof lost authorization identity");
+  assert(typeof actionProof.trusted_state_id === "string", "Valid action proof lost trusted-state identity");
+  assert(actionProof.executed === action.executed, "Valid action proof execution flag changed");
 
   return {
     name: "valid",
@@ -164,6 +181,7 @@ function validScenarioEvidence(response) {
       result: action.result?.status ?? null,
       detail: action.detail,
     },
+    action_proof: actionProof,
     adapter_calls: gateway.adapter_calls,
     timeline: timelineSummary(response.timeline),
   };
@@ -174,6 +192,7 @@ function tamperedScenarioEvidence(response) {
   const verification = response.verification;
   const gateway = response.gateway;
   const action = response.action;
+  const actionProof = response.action_proof;
   const attack = response.attack_probe;
   const kinds = sortedKinds(response.graph.edges);
 
@@ -208,6 +227,22 @@ function tamperedScenarioEvidence(response) {
   assert(gateway.adapter_calls === 0, "Tampered gateway reached the adapter");
   assert(action.executed === false, "Tampered action executed");
   assert(action.adapter_calls === 0, "Tampered adapter call count changed");
+  assert(actionProof?.version === "action-proof-v1", "Tampered action proof is missing");
+  assert(actionProof.decision === gateway.status, "Tampered action proof decision changed");
+  assert(actionProof.reason_code === gateway.reason_code, "Tampered action proof reason changed");
+  assert(actionProof.detail === gateway.detail, "Tampered action proof detail changed");
+  assert(actionProof.action?.type === action.action_type, "Tampered action proof type changed");
+  assert(actionProof.action?.destination === action.destination, "Tampered action proof destination changed");
+  assert(actionProof.provenance?.ancestry_status === metrics.ancestry_status, "Tampered action proof ancestry changed");
+  assert(actionProof.provenance?.source_count === verification.source_nodes.length, "Tampered action proof source count changed");
+  assert(actionProof.provenance?.witness_count === metrics.witness_count, "Tampered action proof witness count changed");
+  assert(actionProof.provenance?.independent_paths === metrics.path_count, "Tampered action proof path count changed");
+  assert(actionProof.provenance?.deepest_hops === metrics.deepest_hops, "Tampered action proof depth changed");
+  assert(actionProof.provenance?.max_depth === metrics.max_depth, "Tampered action proof authorization bound changed");
+  assert(actionProof.policy_version === ACTION_POLICY_VERSION, "Tampered action proof policy version changed");
+  assert(actionProof.authorization_id === null, "Tampered action proof gained authorization identity");
+  assert(actionProof.trusted_state_id === null, "Tampered action proof gained trusted-state identity");
+  assert(actionProof.executed === action.executed, "Tampered action proof execution flag changed");
 
   return {
     name: "tampered",
@@ -261,6 +296,7 @@ function tamperedScenarioEvidence(response) {
       result: action.result?.status ?? null,
       detail: action.detail,
     },
+    action_proof: actionProof,
     adapter_calls: gateway.adapter_calls,
     timeline: timelineSummary(response.timeline),
   };

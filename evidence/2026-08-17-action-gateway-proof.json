@@ -23,11 +23,11 @@
   "implementation": {
     "hash_algorithm": "sha256",
     "files": {
-      "src/hydradb-client.mjs": "3a0351df5f8867a233afb97a00f1ba95e8152648fab046884996f04874def767",
+      "src/hydradb-client.mjs": "19c9295de7fdd300a52c48993644471c7f7df21fd01a9f29f4a4935b075c59d8",
       "src/provenance-writer.mjs": "4c819a97e78cd49b00c2991c3492be508615c8b2311ba8d0a4e358482565784b",
-      "src/action-gateway.mjs": "e8bad29b57c82c50def1010ff73f630235ede0aef7744490ed0184c21964c59f",
-      "scripts/prove-action-gateway.mjs": "eb562de241042b4ab8d7ae1292e700c9fe2fe0de24ee3635de0d150e8f9ea0d8",
-      "scripts/validate-action-gateway-evidence.mjs": "556b696c0c0da3e4201b8352a1cac69deca020e5aad78edb712708304169240f"
+      "src/action-gateway.mjs": "9dd31fd27016434facd7b8e37bcf165eab81c073f4a4a3f77ee72a531cf82036",
+      "scripts/prove-action-gateway.mjs": "8a2496624c5b4847d2580463645dcf1b3cb2f2d09069faaca5646f58ed191b75",
+      "scripts/validate-action-gateway-evidence.mjs": "785c38dcfea10df3c1a115ba6090d981f5451baa575aad3d68c5a3af522df237"
     }
   },
   "gateway": {
@@ -36,6 +36,7 @@
     "policy_version": "internal-message-policy-v1",
     "verifier_version": "provenance-state-verifier-v1",
     "verification_timeout_ms": 5000,
+    "adapter_timeout_ms": 5000,
     "allowed_source_authorities": [
       "quarantine-proof-connector"
     ],
@@ -372,6 +373,25 @@
       "status": "PASS"
     },
     {
+      "name": "adapter_timeout_is_indeterminate_and_not_retried",
+      "input_classification": "stalled_authorized_adapter",
+      "input": {
+        "adapter_timeout_ms": 5
+      },
+      "expected_result": "BLOCK",
+      "actual_result": "BLOCK",
+      "reason_code": "BLOCK_SYSTEM_ERROR",
+      "detail": "ACTION_ADAPTER_TIMEOUT",
+      "graph_assertions": {
+        "adapter_calls": 1,
+        "adapter_timeout_ms": 5,
+        "replay_result": "BLOCK",
+        "replay_reason_code": "BLOCK_SYSTEM_ERROR",
+        "replay_detail": "ACTION_INDETERMINATE"
+      },
+      "status": "PASS"
+    },
+    {
       "name": "blocked_actions_never_reach_adapter",
       "input_classification": "aggregate_fail_closed_adapter_guard",
       "input": {
@@ -397,8 +417,8 @@
     }
   ],
   "summary": {
-    "total": 17,
-    "passed": 17,
+    "total": 18,
+    "passed": 18,
     "failed": 0
   },
   "notes": [
@@ -406,9 +426,9 @@
     "The missing-record and depth-capped ancestry controls call the live writer verifier; the unresolved fixture is a signed two-hop chain that passes at depth 16 and blocks at depth 1.",
     "The gateway accepts only raw ActionIntent values; trusted state, provenance witnesses, policy decisions, freshness, and verification claims are not caller-controlled fields.",
     "The dry-run adapter is an opaque capability without a public execute method and receives an authorized immutable action only after graph verification, policy evaluation, freshness, and replay checks.",
-    "HydraDB query failures, verifier exceptions, and verification timeouts are mapped to BLOCK_SYSTEM_ERROR and never authorize an action.",
+    "HydraDB query failures, verifier exceptions, verification timeouts, and adapter timeouts are mapped to BLOCK_SYSTEM_ERROR and never authorize a new attempt.",
     "The MVP policy uses an exact internal:alerts destination and a trusted connector-authority allowlist.",
-    "Replay protection is process-local and covers both request_id and action_id; adapter response loss remains indeterminate and is not automatically retried.",
+    "Replay protection is process-local and covers both request_id and action_id; adapter failure or timeout remains indeterminate and is not automatically retried.",
     "The fixed recorded_at value, clock, and fixture identifiers make this evidence deterministic; recorded_at is not a wall-clock execution timestamp, and local signing and connector keys are proof fixtures only."
   ]
 }

@@ -519,8 +519,9 @@ export function createDemoOrchestrator(options = {}) {
     ].map((check) => Object.freeze(check));
   }
 
-  function failureResponse(scenario, error, reasonCode = BLOCK_SYSTEM_ERROR) {
-    const detail = error?.message || "DEMO_ORCHESTRATION_FAILED";
+  function failureResponse(scenario, _error, reasonCode = BLOCK_SYSTEM_ERROR, publicDetail = null) {
+    const detail = publicDetail
+      ?? (reasonCode === BLOCK_INVALID_INPUT ? "INVALID_DEMO_REQUEST" : "DEMO_ORCHESTRATION_FAILED");
     return Object.freeze({
       status: "FAIL",
       scenario,
@@ -594,7 +595,7 @@ export function createDemoOrchestrator(options = {}) {
 
   async function runOne(scenario) {
     if (!DEMO_SCENARIOS.includes(scenario)) {
-      return failureResponse("valid", new Error("UNKNOWN_DEMO_SCENARIO"), BLOCK_INVALID_INPUT);
+      return failureResponse("valid", null, BLOCK_INVALID_INPUT, "UNKNOWN_DEMO_SCENARIO");
     }
     const startedAt = now();
     const sequence = ++runSequence;
@@ -810,7 +811,7 @@ export function createDemoOrchestrator(options = {}) {
 
   async function run(scenario = "valid") {
     if (pendingRuns >= MAX_PENDING_DEMO_RUNS) {
-      return failureResponse(scenario, new Error("DEMO_BUSY"), BLOCK_SYSTEM_ERROR);
+      return failureResponse(scenario, null, BLOCK_SYSTEM_ERROR, "DEMO_BUSY");
     }
     pendingRuns += 1;
     const task = runQueue.then(async () => {

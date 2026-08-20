@@ -93,6 +93,7 @@ function gatewayWith(verifier, adapter = createDryRunActionAdapter(), options = 
     maxFreshnessMs: options.maxFreshnessMs ?? 100,
     maxAncestryDepth: options.maxAncestryDepth ?? 16,
     verificationTimeoutMs: options.verificationTimeoutMs ?? 100,
+    adapterTimeoutMs: options.adapterTimeoutMs ?? 100,
     maxLedgerEntries: options.maxLedgerEntries ?? 10_000,
     minTrustedSources: options.minTrustedSources ?? 1,
     allowedSourceAuthorities: options.allowedSourceAuthorities ?? ["connector-001"],
@@ -618,6 +619,73 @@ test("adapter failure becomes indeterminate and is never retried", async () => {
   assert.equal(second.reason_code, BLOCK_SYSTEM_ERROR);
   assert.equal(second.detail, "ACTION_INDETERMINATE");
   assert.equal(calls, 1);
+});
+
+test("a stalled adapter times out and remains indeterminate", async () => {
+  let calls = 0;
+  let release;
+  const stalled = new Promise((resolve) => {
+    release = resolve;
+  });
+  const adapter = createActionAdapter(async () => {
+    calls += 1;
+    await stalled;
+    return { status: "TOO_LATE" };
+  });
+  const gateway = gatewayWith(async () => verificationFor(), adapter, {
+    adapterTimeoutMs: 5,
+  });
+
+  const first = await gateway.authorizeAndExecute({
+    ...baseIntent,
+    action_id: "action-adapter-timeout",
+    request_id: "request-adapter-timeout",
+  });
+  const second = await gateway.authorizeAndExecute({
+    ...baseIntent,
+    action_id: "action-adapter-timeout",
+    request_id: "request-adapter-timeout",
+  });
+  release();
+
+  assert.equal(first.reason_code, BLOCK_SYSTEM_ERROR);
+  assert.equal(first.detail, "ACTION_ADAPTER_TIMEOUT");
+  assert.equal(second.reason_code, BLOCK_SYSTEM_ERROR);
+  assert.equal(second.detail, "ACTION_INDETERMINATE");
+  assert.equal(calls, 1);
+});
+
+test("a late adapter rejection after timeout cannot change the indeterminate result", async () => {
+  let rejectAdapter;
+  let unhandledRejection;
+  const rejectionListener = (reason) => {
+    unhandledRejection = reason;
+  };
+  process.once("unhandledRejection", rejectionListener);
+  const adapter = createActionAdapter(async () => new Promise((_, reject) => {
+    rejectAdapter = reject;
+  }));
+  const gateway = gatewayWith(async () => verificationFor(), adapter, {
+    adapterTimeoutMs: 5,
+  });
+
+  const first = await gateway.authorizeAndExecute({
+    ...baseIntent,
+    action_id: "action-late-adapter-rejection",
+    request_id: "request-late-adapter-rejection",
+  });
+  rejectAdapter(new Error("late adapter failure"));
+  await new Promise((resolve) => setImmediate(resolve));
+  const second = await gateway.authorizeAndExecute({
+    ...baseIntent,
+    action_id: "action-late-adapter-rejection",
+    request_id: "request-late-adapter-rejection",
+  });
+
+  process.removeListener("unhandledRejection", rejectionListener);
+  assert.equal(first.detail, "ACTION_ADAPTER_TIMEOUT");
+  assert.equal(second.detail, "ACTION_INDETERMINATE");
+  assert.equal(unhandledRejection, undefined);
 });
 
 test("a full replay ledger fails closed for new identities and still blocks replays", async () => {

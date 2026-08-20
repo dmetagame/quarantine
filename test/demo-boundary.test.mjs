@@ -469,7 +469,9 @@ test("graph hydration failure happens before authorization and cannot hide execu
 
   assert.equal(result.status, "FAIL");
   assert.equal(result.verification.reason_code, "BLOCK_SYSTEM_ERROR");
-  assert.match(result.verification.detail, /DISPLAY_GRAPH_HYDRATION_FAILED/);
+  assert.equal(result.verification.detail, "DEMO_ORCHESTRATION_FAILED");
+  assert.equal(result.gateway.detail, "DEMO_ORCHESTRATION_FAILED");
+  assert.equal(result.timeline[0].detail.includes("DISPLAY_GRAPH_HYDRATION_FAILED"), false);
   assert.equal(result.gateway.adapter_calls, 0);
   assert.equal(result.action.executed, false);
   assert.equal(fixture.orchestrator.adapter.callCount(), 0);
@@ -486,7 +488,9 @@ test("empty graph hydration rows fail closed before authorization", async () => 
 
   assert.equal(result.status, "FAIL");
   assert.equal(result.verification.reason_code, "BLOCK_SYSTEM_ERROR");
-  assert.match(result.verification.detail, /GRAPH_NODE_HYDRATION_INCOMPLETE/);
+  assert.equal(result.verification.detail, "DEMO_ORCHESTRATION_FAILED");
+  assert.equal(result.gateway.detail, "DEMO_ORCHESTRATION_FAILED");
+  assert.equal(result.timeline[0].detail.includes("GRAPH_NODE_HYDRATION_INCOMPLETE"), false);
   assert.equal(result.gateway.adapter_calls, 0);
   assert.equal(result.action.executed, false);
   assert.equal(fixture.orchestrator.adapter.callCount(), 0);

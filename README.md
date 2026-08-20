@@ -1,5 +1,7 @@
 # QUARANTINE
 
+Live judge demo: <https://quarantine.rouma.online>
+
 QUARANTINE is an action safety layer for AI systems. Before an AI-proposed
 action can execute, Quarantine uses HydraDB to prove that the supporting
 context has trustworthy, resolvable provenance. The model may interpret or
@@ -85,6 +87,10 @@ paths and an explicit unresolved frontier when a bounded traversal cannot
 reach a trusted terminal source. Removing HydraDB would remove the demonstrated
 graph-backed reconstruction primitive; a similarity score or an unverified
 relationship lookup would not provide the same evidence of connected ancestry.
+The proof runners also exercise native `algo.MSpaths` for indexed reverse
+witnesses. Runtime authorization deliberately uses bounded strong-consistency
+`MATCH` reads plus application-side closure validation, so the native procedure
+is not being presented as the HMAC verifier itself.
 
 ## Judge Quickstart
 
@@ -118,11 +124,12 @@ ignored because they are generated outputs.
 The release checklist is in
 [`docs/submission-checklist.md`](docs/submission-checklist.md).
 
-For a hosted judge demo, use the target-neutral Docker deployment in
-[`docs/deployment.md`](docs/deployment.md). It keeps the Node gateway and
-persistent HydraDB on one private host, uses file-backed Docker secrets, and
-requires a real host plus TLS endpoint; submission remains pending until the
-hosted smoke tests are verified.
+For a hosted judge demo, use <https://quarantine.rouma.online>. The verified
+deployment returns `ALLOW`, `action.executed: true`, and one adapter call for
+`VALID`; `TAMPERED` returns
+`BLOCK_UNRESOLVED_ANCESTRY / DEPTH_CAP_REACHED`, `action.executed: false`, and
+zero adapter calls. Local reproduction and the target-neutral Docker package
+remain documented in [`docs/deployment.md`](docs/deployment.md).
 
 ## Trust Boundary
 
@@ -385,8 +392,10 @@ malformed closure blocks.
 
 The policy MVP permits only `send_message` actions to the exact
 `internal:alerts` destination, with non-`restricted` data and an explicitly
-allowlisted connector authority. The gateway uses these fail-closed reason
-codes:
+allowlisted connector authority. The hosted demo additionally requires two
+trusted terminal artifact nodes. That is a deterministic cardinality check,
+not proof that the sources have independent organizations or authorities.
+The gateway uses these fail-closed reason codes:
 
 ```text
 BLOCK_INVALID_INPUT
@@ -411,11 +420,13 @@ returned adapter handle.
 
 Replay protection is process-local for this MVP and keys both `request_id` and
 `action_id`. An exact replay returns `BLOCK_REPLAY / REQUEST_REPLAYED`; an
-identity conflict also blocks. If an adapter fails after authorization, the
-request becomes indeterminate and is never automatically retried. Freshness
-uses only the injected trusted clock; clock rollback fails closed. Provenance
-verification has a bounded deadline; query failures, verifier exceptions,
-malformed verifier results, and timeouts are `BLOCK_SYSTEM_ERROR`.
+identity conflict also blocks. If an adapter fails or exceeds its bounded
+5-second execution deadline after authorization, the request becomes
+indeterminate (`BLOCK_SYSTEM_ERROR`) and is never automatically retried.
+Freshness uses only the injected trusted clock; clock rollback fails closed.
+Provenance verification and adapter execution both have bounded deadlines;
+query failures, verifier exceptions, malformed verifier results, and timeouts
+are fail-closed system blocks.
 Requests that were blocked before reservation may be retried after the
 underlying state is repaired; only reserved identities are replay-protected.
 
@@ -429,10 +440,17 @@ and the ignored rolling copy
 positive control, forged-state bypass attempts, live missing and depth-capped
 provenance, stale state, policy violation, replay conflicts, malformed input,
 verifier failure, verifier timeout, and an assertion that blocked actions never
-call the adapter. The positive, missing-record, and depth-capped controls use
+call the adapter. It also proves a stalled adapter returns
+`ACTION_ADAPTER_TIMEOUT` and that the reserved identity becomes
+`ACTION_INDETERMINATE` on replay. The positive, missing-record, and depth-capped controls use
 the live writer and HydraDB. Negative policy controls use deterministic
 verifier fixtures, and the HydraDB failure control uses an explicitly injected
 throwing Hydra client rather than claiming a live database outage.
+
+The demo response includes a compact `action_proof-v1` object with the decision,
+action shape, provenance artifact and witness/path metrics, policy version,
+authorization/trusted-state IDs, and execution flag. The surrounding response
+contains the detailed graph, checks, timeline, and adapter result.
 
 ## Limitations
 
@@ -454,6 +472,9 @@ throwing Hydra client rather than claiming a live database outage.
   allocation table.
 - The action policy is intentionally narrow: only the internal `send_message`
   dry-run path is covered. Real external side effects remain a later gate.
+- An adapter timeout does not claim cancellation: the underlying executor may
+  still complete, so the gateway records the outcome as indeterminate and does
+  not retry the identity.
 - Replay state is process-local; a restart loses the in-memory ledger. A
   durable idempotency store is required before production side effects.
 - HydraDB reads are strongly consistent per request, but the current verifier

@@ -1,7 +1,8 @@
 # Quarantine Demo Script
 
-This is the three-minute judge narrative for the live demo at
-`http://127.0.0.1:4173`.
+This is the three-minute judge narrative for the local demo at
+`http://127.0.0.1:4173` and the hosted demo at
+`https://quarantine.rouma.online`.
 
 ## 0:00-0:20: The Problem
 

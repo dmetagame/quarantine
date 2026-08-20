@@ -23,13 +23,13 @@
   "implementation": {
     "hash_algorithm": "sha256",
     "files": {
-      "src/hydradb-client.mjs": "3a0351df5f8867a233afb97a00f1ba95e8152648fab046884996f04874def767",
+      "src/hydradb-client.mjs": "19c9295de7fdd300a52c48993644471c7f7df21fd01a9f29f4a4935b075c59d8",
       "src/provenance-writer.mjs": "4c819a97e78cd49b00c2991c3492be508615c8b2311ba8d0a4e358482565784b",
-      "src/action-gateway.mjs": "e8bad29b57c82c50def1010ff73f630235ede0aef7744490ed0184c21964c59f",
-      "src/demo-orchestrator.mjs": "bb2f41ac32a3d54fac5ebfd3261c02b092c41fc184131192e6bc48d2697a5021",
+      "src/action-gateway.mjs": "9dd31fd27016434facd7b8e37bcf165eab81c073f4a4a3f77ee72a531cf82036",
+      "src/demo-orchestrator.mjs": "e3d5092ebb9f00726dd6acc296f714dbf228af10c2dcf5dc7c19a61f98ba9df0",
       "scripts/demo-server.mjs": "2f9a898e0d768973439b1b2d556c8a4adfb72fb4e73e973bffcd4d4983780b26",
-      "scripts/prove-demo.mjs": "6de6ddf641053f958b3228c2324873762eb3094b542ef66bdc2a3d0830019a10",
-      "scripts/validate-demo-evidence.mjs": "027a7d40acbb0a8665d171b0d83fb7b90b85b468a710248461ac2d52fe969664",
+      "scripts/prove-demo.mjs": "0501dc194beae05a508d7a1f3c89b12ff3d250651055b334ad950f9432a3488a",
+      "scripts/validate-demo-evidence.mjs": "fd71270ee0531bb87c954a7d59220e2de9cb5006eeabe74dd5275bf074ff12dd",
       "index.html": "f202f4c461d1f90c5ea5a7b0230dc5e7bfb77111674a34ebe9348ea41f41ff3a",
       "public/app.js": "313ef668b24645d4525ab731ab1a05688a4c21d515df8e98de2f950fca77151a",
       "public/styles.css": "0d9e0f157d25d43123c36a854d821e7cd31211a86ac6535591f70fc3890750e5"
@@ -150,6 +150,31 @@
         "adapter_calls": 1,
         "result": "DRY_RUN",
         "detail": "DRY_RUN"
+      },
+      "action_proof": {
+        "version": "action-proof-v1",
+        "decision": "ALLOW",
+        "reason_code": null,
+        "detail": "ACTION_AUTHORIZED",
+        "action": {
+          "type": "send_message",
+          "subject_id": "quarantine-demo-v2:subject:incident",
+          "destination": "internal:alerts",
+          "data_class": "internal"
+        },
+        "provenance": {
+          "artifact_id": "quarantine-demo-v2:valid:action-argument",
+          "ancestry_status": "RESOLVED",
+          "source_count": 2,
+          "witness_count": 4,
+          "independent_paths": 2,
+          "deepest_hops": 2,
+          "max_depth": 2
+        },
+        "policy_version": "internal-message-policy-v1",
+        "authorization_id": "9abd07ea10e76dc992a4226c9d28205e2767c8000d2e39c4ac8c8df57b858025",
+        "trusted_state_id": "0465ed393fbfe3b8e7b7ceca51c67fec035359a2af85d0321c4b215345be96ba",
+        "executed": true
       },
       "adapter_calls": 1,
       "timeline": [
@@ -293,6 +318,31 @@
         "adapter_calls": 0,
         "result": null,
         "detail": "ACTION_NOT_EXECUTED"
+      },
+      "action_proof": {
+        "version": "action-proof-v1",
+        "decision": "BLOCK",
+        "reason_code": "BLOCK_UNRESOLVED_ANCESTRY",
+        "detail": "DEPTH_CAP_REACHED",
+        "action": {
+          "type": "send_message",
+          "subject_id": "quarantine-demo-v2:subject:incident",
+          "destination": "internal:alerts",
+          "data_class": "internal"
+        },
+        "provenance": {
+          "artifact_id": "quarantine-demo-v2:tampered:action-argument",
+          "ancestry_status": "UNRESOLVED",
+          "source_count": 1,
+          "witness_count": 3,
+          "independent_paths": 1,
+          "deepest_hops": 3,
+          "max_depth": 2
+        },
+        "policy_version": "internal-message-policy-v1",
+        "authorization_id": null,
+        "trusted_state_id": null,
+        "executed": false
       },
       "adapter_calls": 0,
       "timeline": [

@@ -30,6 +30,7 @@ import {
   BLOCK_REPLAY,
   BLOCK_STALE,
   BLOCK_SYSTEM_ERROR,
+  createActionAdapter,
   createActionGateway,
   createDryRunActionAdapter,
   TRUSTED_STATE_CONTRACT_VERSION,
@@ -206,6 +207,7 @@ function gatewayWith(verifier, adapter = createDryRunActionAdapter(), options = 
     maxFreshnessMs: options.maxFreshnessMs ?? 100,
     maxAncestryDepth: options.maxAncestryDepth ?? 16,
     verificationTimeoutMs: options.verificationTimeoutMs ?? 5_000,
+    adapterTimeoutMs: options.adapterTimeoutMs ?? 5_000,
     allowedSourceAuthorities: [connectorIssuer],
   });
 }
@@ -786,6 +788,54 @@ async function main() {
   });
 
   await runCase({
+    name: "adapter_timeout_is_indeterminate_and_not_retried",
+    inputClassification: "stalled_authorized_adapter",
+    expectedResult: "BLOCK",
+    input: { adapter_timeout_ms: 5 },
+    execute: async () => {
+      let adapterCalls = 0;
+      let release;
+      const stalled = new Promise((resolvePromise) => {
+        release = resolvePromise;
+      });
+      const adapter = createActionAdapter(async () => {
+        adapterCalls += 1;
+        await stalled;
+        return { status: "TOO_LATE" };
+      });
+      const intent = baseIntent({
+        action_id: "gateway-gate-v1:adapter-timeout:action",
+        request_id: "gateway-gate-v1:adapter-timeout:request",
+        provenance_artifact_id: "gateway-gate-v1:adapter-timeout:artifact",
+      });
+      const gateway = gatewayWith(async () => fixtureVerification(intent), adapter, {
+        adapterTimeoutMs: 5,
+      });
+      const first = await gateway.authorizeAndExecute(intent);
+      const replay = await gateway.authorizeAndExecute(intent);
+      release();
+
+      assert(first.reason_code === BLOCK_SYSTEM_ERROR, "Adapter timeout did not fail closed");
+      assert(first.detail === "ACTION_ADAPTER_TIMEOUT", "Adapter timeout detail changed");
+      assert(replay.reason_code === BLOCK_SYSTEM_ERROR, "Timed-out adapter replay changed classification");
+      assert(replay.detail === "ACTION_INDETERMINATE", "Timed-out adapter was eligible for retry");
+      assert(adapterCalls === 1, "Timed-out adapter executed more than once");
+      return {
+        actual_result: first.status,
+        reason_code: first.reason_code,
+        detail: first.detail,
+        graph_assertions: {
+          adapter_calls: adapterCalls,
+          adapter_timeout_ms: first.adapter_timeout_ms,
+          replay_result: replay.status,
+          replay_reason_code: replay.reason_code,
+          replay_detail: replay.detail,
+        },
+      };
+    },
+  });
+
+  await runCase({
     name: "blocked_actions_never_reach_adapter",
     inputClassification: "aggregate_fail_closed_adapter_guard",
     expectedResult: "BLOCK",
@@ -902,6 +952,7 @@ async function main() {
       policy_version: ACTION_POLICY_VERSION,
       verifier_version: PROVENANCE_STATE_VERIFIER_VERSION,
       verification_timeout_ms: 5_000,
+      adapter_timeout_ms: 5_000,
       allowed_source_authorities: [connectorIssuer],
       allowed_destinations: ["internal:alerts"],
       fail_closed_reason_codes: [
@@ -933,9 +984,9 @@ async function main() {
       "The missing-record and depth-capped ancestry controls call the live writer verifier; the unresolved fixture is a signed two-hop chain that passes at depth 16 and blocks at depth 1.",
       "The gateway accepts only raw ActionIntent values; trusted state, provenance witnesses, policy decisions, freshness, and verification claims are not caller-controlled fields.",
       "The dry-run adapter is an opaque capability without a public execute method and receives an authorized immutable action only after graph verification, policy evaluation, freshness, and replay checks.",
-      "HydraDB query failures, verifier exceptions, and verification timeouts are mapped to BLOCK_SYSTEM_ERROR and never authorize an action.",
+      "HydraDB query failures, verifier exceptions, verification timeouts, and adapter timeouts are mapped to BLOCK_SYSTEM_ERROR and never authorize a new attempt.",
       "The MVP policy uses an exact internal:alerts destination and a trusted connector-authority allowlist.",
-      "Replay protection is process-local and covers both request_id and action_id; adapter response loss remains indeterminate and is not automatically retried.",
+      "Replay protection is process-local and covers both request_id and action_id; adapter failure or timeout remains indeterminate and is not automatically retried.",
       "The fixed recorded_at value, clock, and fixture identifiers make this evidence deterministic; recorded_at is not a wall-clock execution timestamp, and local signing and connector keys are proof fixtures only.",
     ],
   };

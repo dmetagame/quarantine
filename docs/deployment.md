@@ -58,6 +58,7 @@ curl --fail -sS -X POST http://127.0.0.1:4173/api/demo/run \
 The first response must report `gateway.status: "ALLOW"`,
 `action.executed: true`, and `adapter_calls: 1`. The second must report
 `BLOCK_UNRESOLVED_ANCESTRY`, `action.executed: false`, and `adapter_calls: 0`.
+Both responses should include `action_proof.version: "action-proof-v1"`.
 Run the browser check at the public HTTPS URL after the reverse proxy is
 configured.
 

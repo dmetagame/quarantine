@@ -325,6 +325,7 @@ export function createActionGateway({
   maxFreshnessMs = 5_000,
   maxAncestryDepth = 16,
   verificationTimeoutMs = 5_000,
+  adapterTimeoutMs = 5_000,
   maxLedgerEntries = 10_000,
   minTrustedSources = 1,
   allowedSourceAuthorities = ["quarantine-proof-connector"],
@@ -349,6 +350,11 @@ export function createActionGateway({
     || verificationTimeoutMs < 1
     || verificationTimeoutMs > 30_000) {
     throw new Error("verificationTimeoutMs must be between 1 and 30000");
+  }
+  if (!Number.isInteger(adapterTimeoutMs)
+    || adapterTimeoutMs < 1
+    || adapterTimeoutMs > 30_000) {
+    throw new Error("adapterTimeoutMs must be between 1 and 30000");
   }
   if (!Number.isInteger(maxLedgerEntries) || maxLedgerEntries < 1 || maxLedgerEntries > 100_000) {
     throw new Error("maxLedgerEntries must be between 1 and 100000");
@@ -811,17 +817,35 @@ export function createActionGateway({
     authorizedActionBrand.add(authorizedAction);
 
     let adapterResult;
+    let adapterTimer;
+    const adapterTimedOut = Symbol("adapter-timed-out");
     try {
       if (!authorizedActionBrand.has(authorizedAction)) {
         throw new Error("Authorized action brand was lost");
       }
-      adapterResult = await executeAction(authorizedAction);
+      adapterResult = await Promise.race([
+        Promise.resolve().then(() => executeAction(authorizedAction)),
+        new Promise((resolve) => {
+          adapterTimer = setTimeout(() => resolve(adapterTimedOut), adapterTimeoutMs);
+        }),
+      ]);
     } catch {
       reservation.state = "indeterminate";
       return block(BLOCK_SYSTEM_ERROR, "ACTION_ADAPTER_FAILED", {
         request_id: intent.request_id,
         action_id: intent.action_id,
         authorization_id: authorizedAction.authorization_id,
+      });
+    } finally {
+      clearTimeout(adapterTimer);
+    }
+    if (adapterResult === adapterTimedOut) {
+      reservation.state = "indeterminate";
+      return block(BLOCK_SYSTEM_ERROR, "ACTION_ADAPTER_TIMEOUT", {
+        request_id: intent.request_id,
+        action_id: intent.action_id,
+        authorization_id: authorizedAction.authorization_id,
+        adapter_timeout_ms: adapterTimeoutMs,
       });
     }
     reservation.state = "completed";

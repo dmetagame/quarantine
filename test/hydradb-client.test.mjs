@@ -73,6 +73,45 @@ test("query aborts a hung HydraDB HTTP call instead of waiting forever", async (
   }
 });
 
+test("query times out when HydraDB sends headers but stalls the response body", { timeout: 250 }, async () => {
+  const client = createHydraClient({
+    httpBase: "http://127.0.0.1:1",
+    timeoutMs: 20,
+  });
+  const originalFetch = globalThis.fetch;
+  let sawAbort = false;
+  globalThis.fetch = async (_url, options) => {
+    options.signal.addEventListener("abort", () => {
+      sawAbort = true;
+    });
+    return {
+      ok: true,
+      status: 200,
+      json: async () => new Promise(() => {}),
+    };
+  };
+  let watchdog;
+  try {
+    const query = client.query("RETURN 1");
+    await assert.rejects(
+      Promise.race([
+        query,
+        new Promise((_resolve, reject) => {
+          watchdog = setTimeout(
+            () => reject(new Error("HydraDB query body remained pending past its deadline")),
+            100,
+          );
+        }),
+      ]),
+      /HydraDB query timed out after 20ms/,
+    );
+    assert.equal(sawAbort, true);
+  } finally {
+    clearTimeout(watchdog);
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("readiness aborts a hung admin endpoint", async () => {
   const client = createHydraClient({
     adminBase: "http://127.0.0.1:1",

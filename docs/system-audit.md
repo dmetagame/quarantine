@@ -32,7 +32,7 @@ browser (untrusted)
 | `src/hydradb-client.mjs` | Graph HTTP | OpenCypher + params | Projected rows | Trusted infra client | Bearer token, `consistency: strong` | Throws | fetch | `hydradb-client.test.mjs` |
 | `src/provenance-writer.mjs` | Signed lineage write/verify | Content + observed parents | HMAC nodes/edges, VERIFIED/INVALID/UNRESOLVED/MISSING/SYSTEM_ERROR | Trusted writer | Producer may send only `{content}` | Fail-closed BLOCK | HydraDB, signing key | writer unit + live proof |
 | `src/action-gateway.mjs` | Authorize + execute | Action intent | ALLOW/BLOCK + adapter | Trusted | Rejects trust-control fields; branded state | Fail-closed | Verifier, adapter, clock | `action-gateway.test.mjs` + live proof |
-| Dry-run adapter | Record authorized action | Branded capability | `DRY_RUN` | Trusted, opaque | No public `execute` | Indeterminate on throw | WeakMap executor | gateway tests |
+| Dry-run adapter | Record authorized action | Branded capability | `DRY_RUN` | Trusted, opaque | No public `execute` | Indeterminate on throw or timeout | WeakMap executor | gateway tests |
 | Caddy | TLS + HTTP→HTTPS | Host 80/443 | Reverse proxy to loopback 4173 | Infra | HydraDB unpublished | ACME/startup fail | Host Caddy | Live headers |
 | Compose | One-host runtime | `.env.deploy` + secrets | `demo` + `hydradb` | Infra | Secrets as files, demo bind 127.0.0.1 | Restart unless-stopped | Docker | `docs/deployment.md` |
 
@@ -66,7 +66,7 @@ before graph mutation (live tampered probe).
 | Replay same request_id/action_id | BLOCK_REPLAY; concurrent exact replay executes once |
 | Parameter mutation after validate | Snapshotted; proxy intents fail closed |
 | TOCTOU display vs authorize | Serialized `runQueue`; second HydraDB verify inside gateway |
-| HydraDB down | Health 503; orchestrator `failureResponse` BLOCK; **hang is not BLOCK** (P1) |
+| HydraDB down | Health 503; orchestrator `failureResponse` BLOCK; bounded query/readiness deadline |
 | Graph cycles / truncated depth | INVALID / UNRESOLVED fail-closed |
 | Prompt injection / AI override | No model in the authorize path. AI is not an authority. |
 | Oversized body | Live 413 |
@@ -95,9 +95,11 @@ Implemented and distinguishable: `VERIFIED`, `INVALID`, `UNRESOLVED`,
 `MISSING`, `SYSTEM_ERROR`.
 
 Not implemented: `CONFLICTING`, `STALE` (artifact-level; freshness is a
-gateway trusted-state window), `INSUFFICIENT` (policy currently requires ≥1
-trusted terminal, not N independent witnesses). The valid demo graph already
-has two source-to-action paths; policy does not require that.
+gateway trusted-state window), or a distinct provenance classification for
+insufficient support. The hosted demo policy requires two trusted terminal
+artifact nodes and reports `BLOCK_POLICY /
+INSUFFICIENT_TRUSTED_SOURCES`; this is a policy result, not an independent-
+authority proof. Its `independent_paths` metric counts graph paths only.
 
 ## Failure Matrix
 
@@ -105,15 +107,15 @@ has two source-to-action paths; policy does not require that.
 |---|---|---|
 | HydraDB not ready | Health 503 BLOCK | BLOCK |
 | HydraDB query error | BLOCK_SYSTEM_ERROR | BLOCK |
-| HydraDB HTTP hang | Observation `fetch` has no abort; request sticks until client 15s | BLOCK |
+| HydraDB HTTP hang | Full request/body deadline; timeout maps to `BLOCK_SYSTEM_ERROR` | BLOCK |
 | Malformed projection | Throws → orchestrator BLOCK | BLOCK |
 | Missing parent | PARENT_NOT_AUTHENTIC / UNRESOLVED | BLOCK |
 | Stale trusted state | BLOCK_STALE | BLOCK |
 | Policy deny | BLOCK_POLICY | BLOCK |
-| Adapter throw | ACTION_INDETERMINATE, no retry | BLOCK |
+| Adapter throw/timeout | ACTION_INDETERMINATE, no retry; timeout is `ACTION_ADAPTER_TIMEOUT` | BLOCK |
 | Process restart | Replay ledger wiped (documented; adapter is dry-run) | Durable before real side effects |
-| Duplicate demo click | New request_id each run, so ALLOW again | Demo UX; ledger grows (P1) |
-| Public burst | Unbounded promise queue | Bound + busy |
+| Duplicate demo click | New request_id each run, so ALLOW again | Demo UX; bounded ledger |
+| Public burst | `MAX_PENDING_DEMO_RUNS=8`; excess returns `DEMO_BUSY` | Bound + busy |
 
 ## Live Host (`https://quarantine.rouma.online`)
 
@@ -128,6 +130,9 @@ Verified 2026-08-20:
 - Valid ALLOW + adapter 1; tampered `BLOCK_UNRESOLVED_ANCESTRY` + adapter 0
 
 ## Judge Score (Hack Hydra, brutal)
+
+These scores are the current audit baseline before the dirty post-`cb07479`
+deadline changes are deployed; recheck them against the final live image.
 
 | Criterion | Score /10 | Note |
 |---|---|---|
@@ -151,24 +156,25 @@ claiming production side effects.
 
 | ID | Sev | Category | Current | Risk | Fix | Complexity | Tests | Hackathon |
 |---|---|---|---|---|---|---|---|---|
-| P1-TIMEOUT | P1 | Fail-closed | `fetch` has no abort; observation verify can hang | Availability; not an auth bypass | Default query + ready timeout; abort signal | S | Unit abort test | High |
-| P1-QUEUE | P1 | DoS | Unbounded `runQueue` + growing replay Maps | Memory / stalled public demo | Cap pending runs; cap/evict ledger | S | Concurrent busy | High |
-| P1-PRODKEYS | P1 | Config | Orchestrator falls back to published proof keys | Footgun if env missing | Refuse defaults when `NODE_ENV=production` | S | Boot test | Medium |
+| P1-TIMEOUT | P1 | Fail-closed | Complete HydraDB request/body deadline is implemented locally; hosted image pending | Availability; not an auth bypass | Default query + ready timeout; abort signal | S | Body-stall unit test | High |
+| P1-ADAPTER-TIMEOUT | P1 | Fail-closed | Bounded adapter deadline is implemented locally; hosted image pending | Stalled executor can otherwise hold a request/queue | Timeout + indeterminate replay state | S | Gateway/proof regression | High |
+| P1-QUEUE | P1 | DoS | `runQueue` and replay ledger are bounded | Memory / stalled public demo | Cap pending runs and ledger | S | Concurrent busy | High |
+| P1-PRODKEYS | P1 | Config | Production refuses published proof keys | Footgun if env missing | Refuse defaults in production | S | Boot test | Medium |
 | P2-HSTS | P2 | Deploy | No HSTS | SSL-strip after first visit | Caddy header | S | Live header | Medium |
 | P2-HMACCMP | P2 | Crypto | Connector compare uses `===` | Timing leak; not on public API | `timingSafeEqual` | S | Writer unit | Low |
 | P2-HEALTHLEAK | P2 | Info | Health returns `http://hydradb:8443` | Internal name leak | Omit URL | S | Health contract | Low |
 | P2-HEAD | P3 | HTTP | HEAD `/api/health` 404 | Harmless | Allow HEAD | S | Boundary | Low |
 | P2-REPLAYVOL | P2 | Residual | Replay ledger process-local | Real side effects after restart | Durable ledger | M | Restart test | Medium |
-| P2-PROOF | P2 | Product | ALLOW is not a bound proof object | Judge "why allowed?" | ACTION_PROOF from existing state | M | Demo proof | High |
-| P2-WITNESS | P2 | Product | Policy does not require independent paths | Under-sells HydraDB | Require ≥2 trusted sources | M | Gateway + demo | High |
+| P2-PROOF | P2 | Product | Compact `action_proof-v1` is shipped; self-contained witness detail remains a gap | Judge "why allowed?" | Extend only if evidence value justifies it | M | Demo proof | High |
+| P2-WITNESS | P2 | Product | Demo requires two terminal artifacts, but does not prove independent authorities | Under-sells HydraDB | Add explicit authority/disjoint-branch semantics only if justified | M | Gateway + demo | High |
 | P3-CONFLICT | P3 | Product | No CONFLICTING state | Future depth | Distinguish contradictory claims | L | New proofs | High |
 | P3-CI | P3 | Eng | No CI | Drift | GitHub Actions `npm test` | S | Workflow | Medium |
 
 ### Must fix (P1)
 
-1. HydraDB HTTP abort/timeout
-2. Bound public demo queue and replay Maps
-3. Refuse published signing keys in production
+1. Deploy and verify the local complete-response and adapter deadlines
+2. Keep the public demo queue and replay ledger bounded
+3. Keep production key fallback disabled
 
 ### Should fix (P2)
 
@@ -190,9 +196,13 @@ after hashed implementation files change.
 | ID | Result |
 |---|---|
 | P1-TIMEOUT | Done. HydraDB `query` and `readyz` abort after 5s (override 1–30000). Hung fetch unit tests pass. Observation hangs now become orchestrator BLOCK. |
+| P1-ADAPTER-TIMEOUT | Done locally. Adapter execution has a 5s deadline; timeout returns `ACTION_ADAPTER_TIMEOUT`, marks the identity indeterminate, and blocks replay. Deployment still pending. |
 | P1-QUEUE | Done. `MAX_PENDING_DEMO_RUNS = 8` returns `DEMO_BUSY`. Gateway `maxLedgerEntries = 10000` returns `ACTION_LEDGER_FULL` without evicting replay identity. |
 | P1-PRODKEYS | Done. `NODE_ENV=production` refuses published proof-key fallbacks. |
 | P2-WITNESS | Done. Demo gateway requires `minTrustedSources: 2` (existing two-path valid graph). |
 | P2-PROOF | Done. Server returns `action_proof` v1; UI shows decision, independent paths, sources, authorization id prefix. |
 
-Live local proofs regenerated and `npm run validate:evidence` PASS. The public host still runs the previous image until this tree is deployed.
+Live local proofs regenerated and `npm run validate:evidence` PASS. The public
+host currently matches `cb07479`; it does not yet include the two local
+deadline changes in this worktree. Re-run hosted smoke tests after the final
+image is deployed before creating the submission tag.

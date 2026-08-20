@@ -14,16 +14,25 @@ function abortError(timeoutMs, description) {
   return error;
 }
 
-async function fetchWithTimeout(url, options, timeoutMs, description) {
+async function withTimeout(operation, timeoutMs, description) {
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1) {
     throw new Error("HydraDB timeoutMs must be a positive integer");
   }
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let timer;
+  const timeout = new Promise((_resolve, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(abortError(timeoutMs, description));
+    }, timeoutMs);
+  });
   try {
-    return await fetch(url, { ...options, signal: controller.signal });
+    return await Promise.race([
+      Promise.resolve().then(() => operation(controller.signal)),
+      timeout,
+    ]);
   } catch (error) {
-    if (error?.name === "AbortError" || controller.signal.aborted) {
+    if (error?.name === "AbortError" || error?.name === "TimeoutError" || controller.signal.aborted) {
       throw abortError(timeoutMs, description);
     }
     throw error;
@@ -164,22 +173,30 @@ export function createHydraClient(options = {}) {
 
   async function query(queryText, parameters = {}, options = {}) {
     const request = requestBody(queryText, parameters, options);
-    const response = await fetchWithTimeout(
-      `${config.httpBase}/v1/graphs/${config.graphId}/query`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${config.token}`,
-          "Content-Type": "application/json",
-          "X-Graph-Namespace": config.namespace,
+    const { response, payload } = await withTimeout(async (signal) => {
+      const response = await fetch(
+        `${config.httpBase}/v1/graphs/${config.graphId}/query`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${config.token}`,
+            "Content-Type": "application/json",
+            "X-Graph-Namespace": config.namespace,
+          },
+          body: JSON.stringify(request),
+          signal,
         },
-        body: JSON.stringify(request),
-      },
-      request.timeout_ms,
-      "HydraDB query",
-    );
-
-    const payload = await response.json().catch(() => null);
+      );
+      return {
+        response,
+        payload: await response.json().catch((error) => {
+          if (error?.name === "AbortError" || signal.aborted) {
+            throw error;
+          }
+          return null;
+        }),
+      };
+    }, request.timeout_ms, "HydraDB query");
     if (!response.ok) {
       throw new Error(`HydraDB query failed (${response.status}): ${JSON.stringify(payload)}`);
     }
@@ -188,9 +205,8 @@ export function createHydraClient(options = {}) {
   }
 
   async function assertReady() {
-    const response = await fetchWithTimeout(
-      `${config.adminBase}/readyz`,
-      { method: "GET" },
+    const response = await withTimeout(
+      (signal) => fetch(`${config.adminBase}/readyz`, { method: "GET", signal }),
       config.timeoutMs,
       "HydraDB readiness",
     );

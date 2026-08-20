@@ -30,16 +30,19 @@ competition ownership.
   action-gateway, and end-to-end demo reports are present under `evidence/`;
   rolling `latest-*` reports and local HydraDB data are excluded by
   `.gitignore`.
-- [x] **Reproducible post-hardening live proof** - VERIFIED 2026-08-19 against
+- [x] **Reproducible post-hardening live proof** - VERIFIED 2026-08-20 against
   the running `ghcr.io/hydra-db/hydradb:0.1.1` image and expected registry
   digest. HydraDB, provenance writer, action gateway, and both end-to-end demo
-  scenarios passed. `npm run validate:evidence` passed, and the required
-  dated/latest evidence pairs are byte-identical.
+  scenarios passed. The gateway evidence also covers the bounded adapter
+  timeout and indeterminate replay contract. `npm run validate:evidence`
+  passed, and the required dated/latest evidence pairs are byte-identical.
 - [x] **Three-minute demo script** - see `docs/demo-script.md`.
-- [ ] **Hosted demo deployment** - PENDING. The target-neutral Docker/Compose
-  package is documented in [`docs/deployment.md`](deployment.md), but a public
-  host, TLS endpoint, and live smoke test still need to be authorized and
-  completed before submission.
+- [x] **Hosted demo deployment** - VERIFIED 2026-08-20 at
+  <https://quarantine.rouma.online>. HTTPS and the certificate are valid;
+  `VALID` returns `ALLOW`, `action.executed: true`, `adapter_calls: 1`, and
+  `TAMPERED` returns `BLOCK_UNRESOLVED_ANCESTRY / DEPTH_CAP_REACHED`,
+  `action.executed: false`, `adapter_calls: 0`. Re-run this smoke test after
+  deploying the final local deadline fixes.
 - [ ] **Demo video** - NEEDS HUMAN ACTION.
 
 ## Submission

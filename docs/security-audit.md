@@ -31,7 +31,8 @@ execution method and can only be reached through a gateway-issued capability.
 - Missing, malformed, unresolved, stale, replayed, or system-error states fail
   closed. Unexpected demo orchestration errors return `BLOCK_SYSTEM_ERROR`.
 - HydraDB response hydration and verifier failures are handled before an action
-  can be authorized.
+  can be authorized. Provenance and adapter execution deadlines fail closed;
+  an adapter timeout is indeterminate and is not retried.
 - The demo HTTP boundary accepts only a single whitelisted scenario field and
   requires the exact `application/json` media type.
 
@@ -45,6 +46,8 @@ execution method and can only be reached through a gateway-issued capability.
   revocation, or organization-wide key management.
 - The demo adapter is deliberately dry-run only. No external action is
   authorized by this repository.
+- Adapter timeout does not imply cancellation of an underlying executor; a
+  real side-effect adapter needs its own cancellation/idempotency contract.
 
 The live HydraDB and demo proof commands are required to refresh hash-bound
 evidence after implementation changes. This audit does not rewrite evidence
