@@ -69,6 +69,10 @@ const dom = Object.freeze({
   actionType: document.querySelector("#actionType"),
   actionDestination: document.querySelector("#actionDestination"),
   adapterCalls: document.querySelector("#adapterCalls"),
+  proofDecision: document.querySelector("#proofDecision"),
+  proofPaths: document.querySelector("#proofPaths"),
+  proofSources: document.querySelector("#proofSources"),
+  proofAuthorization: document.querySelector("#proofAuthorization"),
   resultBanner: document.querySelector("#resultBanner"),
   resultGlyph: document.querySelector("#resultGlyph"),
   summaryProvenance: document.querySelector("#summaryProvenance"),
@@ -629,6 +633,15 @@ function renderResultSummary(response) {
   setText(dom.adapterCalls, gateway.adapter_calls, "0");
   setText(dom.actionType, action.action_type);
   setText(dom.actionDestination, action.destination);
+  const proof = isObject(response.action_proof) ? response.action_proof : {};
+  const proofProvenance = isObject(proof.provenance) ? proof.provenance : {};
+  setText(dom.proofDecision, proof.decision, "-");
+  setText(dom.proofPaths, proofProvenance.independent_paths, "-");
+  setText(dom.proofSources, proofProvenance.source_count, "-");
+  setText(
+    dom.proofAuthorization,
+    proof.authorization_id ? String(proof.authorization_id).slice(0, 12) : "-",
+  );
 }
 
 function policyKindForSummary(value) {

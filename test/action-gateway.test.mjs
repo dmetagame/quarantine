@@ -93,6 +93,8 @@ function gatewayWith(verifier, adapter = createDryRunActionAdapter(), options = 
     maxFreshnessMs: options.maxFreshnessMs ?? 100,
     maxAncestryDepth: options.maxAncestryDepth ?? 16,
     verificationTimeoutMs: options.verificationTimeoutMs ?? 100,
+    maxLedgerEntries: options.maxLedgerEntries ?? 10_000,
+    minTrustedSources: options.minTrustedSources ?? 1,
     allowedSourceAuthorities: options.allowedSourceAuthorities ?? ["connector-001"],
   });
 }
@@ -443,6 +445,19 @@ test("a verifier rejection after timeout cannot change the fail-closed result", 
   assert.equal(adapter.callCount(), 0);
 });
 
+test("policy can require more than one trusted terminal source", async () => {
+  const adapter = createDryRunActionAdapter();
+  const gateway = gatewayWith(async () => verificationFor(), adapter, { minTrustedSources: 2 });
+  const result = await gateway.authorizeAndExecute({
+    ...baseIntent,
+    action_id: "action-sources",
+    request_id: "request-sources",
+  });
+  assert.equal(result.reason_code, BLOCK_POLICY);
+  assert.equal(result.detail, "INSUFFICIENT_TRUSTED_SOURCES");
+  assert.equal(adapter.callCount(), 0);
+});
+
 test("policy blocks unlisted destinations and restricted data", async () => {
   const adapter = createDryRunActionAdapter();
   const verifier = async (artifactId) => {
@@ -603,6 +618,44 @@ test("adapter failure becomes indeterminate and is never retried", async () => {
   assert.equal(second.reason_code, BLOCK_SYSTEM_ERROR);
   assert.equal(second.detail, "ACTION_INDETERMINATE");
   assert.equal(calls, 1);
+});
+
+test("a full replay ledger fails closed for new identities and still blocks replays", async () => {
+  let verifierCalls = 0;
+  const adapter = createDryRunActionAdapter();
+  const gateway = gatewayWith(async (artifactId) => {
+    verifierCalls += 1;
+    return verificationFor({
+      ...baseIntent,
+      provenance_artifact_id: artifactId,
+    });
+  }, adapter, { maxLedgerEntries: 1 });
+
+  const first = await gateway.authorizeAndExecute({
+    ...baseIntent,
+    action_id: "action-ledger-1",
+    request_id: "request-ledger-1",
+    provenance_artifact_id: "artifact-ledger-1",
+  });
+  const overflow = await gateway.authorizeAndExecute({
+    ...baseIntent,
+    action_id: "action-ledger-2",
+    request_id: "request-ledger-2",
+    provenance_artifact_id: "artifact-ledger-2",
+  });
+  const replay = await gateway.authorizeAndExecute({
+    ...baseIntent,
+    action_id: "action-ledger-1",
+    request_id: "request-ledger-1",
+    provenance_artifact_id: "artifact-ledger-1",
+  });
+
+  assert.equal(first.status, "ALLOW");
+  assert.equal(overflow.reason_code, BLOCK_SYSTEM_ERROR);
+  assert.equal(overflow.detail, "ACTION_LEDGER_FULL");
+  assert.equal(replay.reason_code, BLOCK_REPLAY);
+  assert.equal(adapter.callCount(), 1);
+  assert.equal(verifierCalls, 1);
 });
 
 test("the adapter handle has no direct execution path", async () => {

@@ -11,6 +11,7 @@ import {
 } from "../src/action-gateway.mjs";
 import {
   DEMO_VERSION,
+  MAX_PENDING_DEMO_RUNS,
   createDemoOrchestrator,
 } from "../src/demo-orchestrator.mjs";
 import {
@@ -324,6 +325,41 @@ test("demo HTTP boundary rejects lookalike JSON media types", async () => {
   assert.equal(runCalls, 0);
 });
 
+test("excess concurrent demo runs fail closed instead of queueing unbounded", async () => {
+  let release;
+  const hold = new Promise((resolve) => {
+    release = resolve;
+  });
+  const hydra = Object.freeze({
+    config: Object.freeze({
+      httpBase: "http://127.0.0.1:1",
+      adminBase: "http://127.0.0.1:2",
+      graphId: "default",
+      namespace: "default",
+      cellId: "cell-0",
+    }),
+    async assertReady() {
+      await hold;
+    },
+    async query() {
+      throw new Error("must not query while the demo is busy");
+    },
+  });
+  const orchestrator = createDemoOrchestrator({ hydra, now: () => 2_000 });
+  const started = Array.from({ length: MAX_PENDING_DEMO_RUNS }, () => orchestrator.run("valid"));
+  const busy = await orchestrator.run("tampered");
+  release();
+  const held = await Promise.all(started);
+
+  assert.equal(busy.status, "FAIL");
+  assert.equal(busy.gateway.reason_code, "BLOCK_SYSTEM_ERROR");
+  assert.equal(busy.gateway.detail, "DEMO_BUSY");
+  assert.equal(busy.action.executed, false);
+  assert.equal(orchestrator.adapter.callCount(), 0);
+  assert.equal(held.length, MAX_PENDING_DEMO_RUNS);
+  assert.equal(held.every((result) => result.action.executed === false), true);
+});
+
 test("demo orchestrator fails closed when HydraDB is unavailable", async () => {
   const hydra = Object.freeze({
     config: Object.freeze({
@@ -351,6 +387,51 @@ test("demo orchestrator fails closed when HydraDB is unavailable", async () => {
   assert.equal(result.gateway.adapter_calls, 0);
   assert.equal(result.action.executed, false);
   assert.equal(orchestrator.adapter.callCount(), 0);
+});
+
+test("production refuses published proof keys", () => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousSigning = process.env.QUARANTINE_PROVENANCE_SIGNING_KEY;
+  const previousConnector = process.env.QUARANTINE_CONNECTOR_ATTESTATION_KEY;
+  process.env.NODE_ENV = "production";
+  delete process.env.QUARANTINE_PROVENANCE_SIGNING_KEY;
+  delete process.env.QUARANTINE_CONNECTOR_ATTESTATION_KEY;
+  try {
+    assert.throws(
+      () => createDemoOrchestrator({
+        hydra: Object.freeze({
+          config: Object.freeze({
+            httpBase: "http://127.0.0.1:1",
+            adminBase: "http://127.0.0.1:2",
+            graphId: "default",
+            namespace: "default",
+            cellId: "cell-0",
+          }),
+          async assertReady() {},
+          async query() {
+            throw new Error("must not query");
+          },
+        }),
+      }),
+      /Production demo requires/,
+    );
+  } finally {
+    if (previousNodeEnv === undefined) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = previousNodeEnv;
+    }
+    if (previousSigning === undefined) {
+      delete process.env.QUARANTINE_PROVENANCE_SIGNING_KEY;
+    } else {
+      process.env.QUARANTINE_PROVENANCE_SIGNING_KEY = previousSigning;
+    }
+    if (previousConnector === undefined) {
+      delete process.env.QUARANTINE_CONNECTOR_ATTESTATION_KEY;
+    } else {
+      process.env.QUARANTINE_CONNECTOR_ATTESTATION_KEY = previousConnector;
+    }
+  }
 });
 
 test("unknown direct demo scenario is invalid input and cannot execute", async () => {

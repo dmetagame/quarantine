@@ -1,9 +1,9 @@
 {
   "status": "PASS",
-  "recorded_at": "2026-08-19T13:19:08.320Z",
+  "recorded_at": "2026-08-20T12:44:37.201Z",
   "gate": "trusted_provenance_writer",
   "schema_version": 2,
-  "run_id": "8136f60fe5ebdc10",
+  "run_id": "67f76da2269c6b16",
   "container": "quarantine-hydradb",
   "image": "ghcr.io/hydra-db/hydradb:0.1.1",
   "image_digest": "sha256:db78309a233be54662db29744047e985a39b51c45a270d1a1f47c31a62cdb709",
@@ -23,7 +23,7 @@
   "implementation": {
     "hash_algorithm": "sha256",
     "files": {
-      "src/hydradb-client.mjs": "d03bd0df67804909ec48cdafd9af3066acb5bffe9bb5bd3b1d1576dbba0b19c3",
+      "src/hydradb-client.mjs": "3a0351df5f8867a233afb97a00f1ba95e8152648fab046884996f04874def767",
       "src/provenance-writer.mjs": "4c819a97e78cd49b00c2991c3492be508615c8b2311ba8d0a4e358482565784b",
       "scripts/prove-provenance-writer.mjs": "addc1f4e137bcfdcc30fda7e9c81acc46173ce46b3003eac95f43512cf0bd549",
       "scripts/validate-evidence.mjs": "4a7bfcfd123c5ead8d1f4794c49eeabcfbb205d6e84c40af4289eadc01aaac3a"
@@ -48,7 +48,7 @@
     "pending_nodes_are_valid_parents": false
   },
   "setup": {
-    "legitimate_parent": "writer-gate-v2:8136f60fe5ebdc10:parent:legitimate",
+    "legitimate_parent": "writer-gate-v2:67f76da2269c6b16:parent:legitimate",
     "legitimate_parent_status": "PASS",
     "legitimate_parent_result": "WRITE_COMMITTED",
     "connector_issuer": "quarantine-proof-connector",
@@ -61,7 +61,7 @@
       "input": {
         "child_id": "child-001",
         "middleware_parent_ids": [
-          "writer-gate-v2:8136f60fe5ebdc10:parent:legitimate"
+          "writer-gate-v2:67f76da2269c6b16:parent:legitimate"
         ],
         "producer_parent_ids": [
           "forged-parent-001"
@@ -90,8 +90,8 @@
       "name": "source_input_mutation_cannot_retarget_attested_write",
       "input_classification": "caller_mutation_during_async_source_verification",
       "input": {
-        "original_source_id": "writer-gate-v2:8136f60fe5ebdc10:source:snapshot-original",
-        "attempted_source_id": "writer-gate-v2:8136f60fe5ebdc10:source:snapshot-retargeted"
+        "original_source_id": "writer-gate-v2:67f76da2269c6b16:source:snapshot-original",
+        "attempted_source_id": "writer-gate-v2:67f76da2269c6b16:source:snapshot-retargeted"
       },
       "expected_result": "PASS",
       "actual_result": "PASS",
@@ -104,7 +104,7 @@
         "retargeted_source_vertices": 0,
         "original_content_hash": "040f20f72760b8f96267572c485f546a9c6ff527f5235c698241993dad159a57",
         "original_authority_id": "quarantine-proof-connector",
-        "committed_artifact_id": "writer-gate-v2:8136f60fe5ebdc10:source:snapshot-original"
+        "committed_artifact_id": "writer-gate-v2:67f76da2269c6b16:source:snapshot-original"
       },
       "status": "PASS"
     },
@@ -112,10 +112,10 @@
       "name": "context_and_output_mutation_cannot_retarget_derived_write",
       "input_classification": "caller_mutation_after_signed_context_validation",
       "input": {
-        "original_child_id": "writer-gate-v2:8136f60fe5ebdc10:child:context-snapshot",
-        "attempted_child_id": "writer-gate-v2:8136f60fe5ebdc10:child:context-retargeted",
+        "original_child_id": "writer-gate-v2:67f76da2269c6b16:child:context-snapshot",
+        "attempted_child_id": "writer-gate-v2:67f76da2269c6b16:child:context-retargeted",
         "observed_parent_ids": [
-          "writer-gate-v2:8136f60fe5ebdc10:parent:legitimate"
+          "writer-gate-v2:67f76da2269c6b16:parent:legitimate"
         ]
       },
       "expected_result": "PASS",
@@ -130,7 +130,7 @@
         "original_content_hash": "7782e057a1077a1c12ef3043716cc8389ffc844ea022c6b3a12e492286ce77c7",
         "original_role": "summary",
         "original_lineage_kind": "summarize",
-        "committed_artifact_id": "writer-gate-v2:8136f60fe5ebdc10:child:context-snapshot",
+        "committed_artifact_id": "writer-gate-v2:67f76da2269c6b16:child:context-snapshot",
         "original_verification_status": "PASS",
         "retargeted_verification_status": "BLOCK",
         "retargeted_verification_detail": "ARTIFACT_NOT_AUTHENTIC"
@@ -141,9 +141,9 @@
       "name": "unknown_observed_parent",
       "input_classification": "trusted_middleware_reference_to_missing_record",
       "input": {
-        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:unknown",
+        "child_id": "writer-gate-v2:67f76da2269c6b16:child:unknown",
         "observed_parent_ids": [
-          "writer-gate-v2:8136f60fe5ebdc10:parent:does-not-exist"
+          "writer-gate-v2:67f76da2269c6b16:parent:does-not-exist"
         ]
       },
       "expected_result": "BLOCK",
@@ -161,9 +161,9 @@
       "name": "existing_parent_without_valid_authenticity",
       "input_classification": "existing_but_unattested_graph_record",
       "input": {
-        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:fake-existing",
+        "child_id": "writer-gate-v2:67f76da2269c6b16:child:fake-existing",
         "observed_parent_ids": [
-          "writer-gate-v2:8136f60fe5ebdc10:parent:fake-existing"
+          "writer-gate-v2:67f76da2269c6b16:parent:fake-existing"
         ]
       },
       "expected_result": "BLOCK",
@@ -181,10 +181,10 @@
       "name": "mixed_valid_and_forged_parents_are_atomic",
       "input_classification": "mixed_trusted_and_missing_parent_set",
       "input": {
-        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:mixed",
+        "child_id": "writer-gate-v2:67f76da2269c6b16:child:mixed",
         "observed_parent_ids": [
-          "writer-gate-v2:8136f60fe5ebdc10:parent:legitimate",
-          "writer-gate-v2:8136f60fe5ebdc10:parent:does-not-exist"
+          "writer-gate-v2:67f76da2269c6b16:parent:legitimate",
+          "writer-gate-v2:67f76da2269c6b16:parent:does-not-exist"
         ]
       },
       "expected_result": "BLOCK",
@@ -204,10 +204,10 @@
       "name": "parent_invalidated_after_prepare_blocks_without_partial_write",
       "input_classification": "valid_signed_context_with_parent_tampered_before_commit",
       "input": {
-        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:revalidation",
+        "child_id": "writer-gate-v2:67f76da2269c6b16:child:revalidation",
         "observed_parent_ids": [
-          "writer-gate-v2:8136f60fe5ebdc10:parent:legitimate",
-          "writer-gate-v2:8136f60fe5ebdc10:parent:revalidation"
+          "writer-gate-v2:67f76da2269c6b16:parent:legitimate",
+          "writer-gate-v2:67f76da2269c6b16:parent:revalidation"
         ]
       },
       "expected_result": "BLOCK",
@@ -230,9 +230,9 @@
       "name": "legitimate_parent_creates_hydrated_reverse_ancestry",
       "input_classification": "trusted_middleware_observed_parent",
       "input": {
-        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:positive",
+        "child_id": "writer-gate-v2:67f76da2269c6b16:child:positive",
         "observed_parent_ids": [
-          "writer-gate-v2:8136f60fe5ebdc10:parent:legitimate"
+          "writer-gate-v2:67f76da2269c6b16:parent:legitimate"
         ]
       },
       "expected_result": "PASS",
@@ -248,14 +248,14 @@
         "direct_edges": 1,
         "edge_kind": "summarize",
         "edge_writer_id": "quarantine-writer-v1",
-        "edge_batch_id": "dcc237c8aafed9dd515b0f030b079922f63e1d15b42732ecf8dc8a331809f718",
+        "edge_batch_id": "665ead8c8df82430de7d74705916d60bc3659c5d4da4068149444ba72260ae1a",
         "edge_write_version": 1,
         "edge_auth_tag_present": true,
         "reverse_witness_count": 1,
         "reverse_witnesses": [
           [
-            "writer-gate-v2:8136f60fe5ebdc10:parent:legitimate",
-            "writer-gate-v2:8136f60fe5ebdc10:child:positive"
+            "writer-gate-v2:67f76da2269c6b16:parent:legitimate",
+            "writer-gate-v2:67f76da2269c6b16:child:positive"
           ]
         ],
         "verification_status": "PASS",
@@ -267,10 +267,10 @@
       "name": "duplicate_parent_is_deduplicated",
       "input_classification": "trusted_duplicate_parent_reference",
       "input": {
-        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:duplicate",
+        "child_id": "writer-gate-v2:67f76da2269c6b16:child:duplicate",
         "observed_parent_ids": [
-          "writer-gate-v2:8136f60fe5ebdc10:parent:legitimate",
-          "writer-gate-v2:8136f60fe5ebdc10:parent:legitimate"
+          "writer-gate-v2:67f76da2269c6b16:parent:legitimate",
+          "writer-gate-v2:67f76da2269c6b16:parent:legitimate"
         ]
       },
       "expected_result": "PASS",
@@ -290,9 +290,9 @@
       "name": "self_parent_is_rejected",
       "input_classification": "self_referential_ancestry",
       "input": {
-        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:self",
+        "child_id": "writer-gate-v2:67f76da2269c6b16:child:self",
         "observed_parent_ids": [
-          "writer-gate-v2:8136f60fe5ebdc10:child:self"
+          "writer-gate-v2:67f76da2269c6b16:child:self"
         ]
       },
       "expected_result": "BLOCK",
@@ -309,9 +309,9 @@
       "name": "immutable_artifact_rewrite_cannot_create_cycle",
       "input_classification": "cycle_attempt_against_committed_artifact",
       "input": {
-        "existing_artifact_id": "writer-gate-v2:8136f60fe5ebdc10:cycle:a",
+        "existing_artifact_id": "writer-gate-v2:67f76da2269c6b16:cycle:a",
         "attempted_parent_ids": [
-          "writer-gate-v2:8136f60fe5ebdc10:cycle:b"
+          "writer-gate-v2:67f76da2269c6b16:cycle:b"
         ]
       },
       "expected_result": "BLOCK",
@@ -329,7 +329,7 @@
       "name": "valid_write_replay_is_idempotent",
       "input_classification": "identical_trusted_write_replayed_twice",
       "input": {
-        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:positive",
+        "child_id": "writer-gate-v2:67f76da2269c6b16:child:positive",
         "replay_count": 2
       },
       "expected_result": "PASS",
@@ -352,7 +352,7 @@
       "name": "client_controlled_trust_escalation_is_rejected",
       "input_classification": "attacker_controlled_trust_flag",
       "input": {
-        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:trust-escalation",
+        "child_id": "writer-gate-v2:67f76da2269c6b16:child:trust-escalation",
         "producer_trusted": true
       },
       "expected_result": "BLOCK",
@@ -369,7 +369,7 @@
       "name": "invalid_connector_attestation_cannot_create_source",
       "input_classification": "attacker_claimed_source_authority",
       "input": {
-        "source_id": "writer-gate-v2:8136f60fe5ebdc10:source:invalid-attestation",
+        "source_id": "writer-gate-v2:67f76da2269c6b16:source:invalid-attestation",
         "attestation_key_id": "local-evidence-key-v1"
       },
       "expected_result": "BLOCK",
@@ -385,7 +385,7 @@
       "name": "staged_write_fault_is_not_valid_provenance",
       "input_classification": "injected_failure_after_pending_child_stage",
       "input": {
-        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:pending-recovery",
+        "child_id": "writer-gate-v2:67f76da2269c6b16:child:pending-recovery",
         "fault_phase": "before_edge_batch"
       },
       "expected_result": "BLOCK",
@@ -409,8 +409,8 @@
       "name": "retry_recovers_same_staged_write_idempotently",
       "input_classification": "trusted_retry_of_identical_pending_batch",
       "input": {
-        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:pending-recovery",
-        "batch_id": "c8ea01bf658ab3d42e33677228468eec250a541fea620199e1223b55caeae2d7"
+        "child_id": "writer-gate-v2:67f76da2269c6b16:child:pending-recovery",
+        "batch_id": "e4107ea4eb22139f35a58f5e7799613d7eff926cdf74a4d3f4d8be1919ad44e2"
       },
       "expected_result": "PASS",
       "actual_result": "PASS",
@@ -429,9 +429,9 @@
       "name": "parent_with_tampered_ancestry_is_rejected",
       "input_classification": "signed_parent_node_with_mutated_lineage_edge",
       "input": {
-        "child_id": "writer-gate-v2:8136f60fe5ebdc10:child:integrity",
+        "child_id": "writer-gate-v2:67f76da2269c6b16:child:integrity",
         "observed_parent_ids": [
-          "writer-gate-v2:8136f60fe5ebdc10:parent:integrity"
+          "writer-gate-v2:67f76da2269c6b16:parent:integrity"
         ]
       },
       "expected_result": "BLOCK",

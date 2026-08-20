@@ -29,6 +29,7 @@ export const DEMO_VERSION = "quarantine-demo-v2";
 export const DEMO_SCENARIOS = Object.freeze(["valid", "tampered"]);
 export const DEMO_OBSERVATION_MAX_DEPTH = 16;
 export const DEMO_AUTHORIZATION_MAX_DEPTH = 2;
+export const MAX_PENDING_DEMO_RUNS = 8;
 
 const DEFAULT_SIGNING_KEY = "local-provenance-writer-test-key-2026";
 const DEFAULT_CONNECTOR_KEY = "local-connector-attestation-key-2026";
@@ -189,10 +190,13 @@ export function createDemoOrchestrator(options = {}) {
   const hydra = options.hydra ?? createHydraClient();
   const signingKey = options.signingKey
     ?? process.env.QUARANTINE_PROVENANCE_SIGNING_KEY
-    ?? DEFAULT_SIGNING_KEY;
+    ?? (process.env.NODE_ENV === "production" ? null : DEFAULT_SIGNING_KEY);
   const connectorKey = options.connectorKey
     ?? process.env.QUARANTINE_CONNECTOR_ATTESTATION_KEY
-    ?? DEFAULT_CONNECTOR_KEY;
+    ?? (process.env.NODE_ENV === "production" ? null : DEFAULT_CONNECTOR_KEY);
+  if (!signingKey || !connectorKey) {
+    throw new Error("Production demo requires QUARANTINE_PROVENANCE_SIGNING_KEY and QUARANTINE_CONNECTOR_ATTESTATION_KEY");
+  }
   const now = options.now ?? (() => Date.now());
   const writer = options.writer ?? createProvenanceWriter({
     hydra,
@@ -219,11 +223,13 @@ export function createDemoOrchestrator(options = {}) {
   const gateway = createActionGateway({
     ...gatewayOptions,
     maxAncestryDepth: DEMO_AUTHORIZATION_MAX_DEPTH,
+    minTrustedSources: 2,
   });
 
   let fixturePromise = null;
   let runSequence = 0;
   let runQueue = Promise.resolve();
+  let pendingRuns = 0;
 
   function timelineNow() {
     try {
@@ -756,6 +762,31 @@ export function createDemoOrchestrator(options = {}) {
         destination: intent.parameters.destination,
       },
       attack_probe: attackProbe,
+      action_proof: Object.freeze({
+        version: "action-proof-v1",
+        decision: gatewayResult.status,
+        reason_code: gatewayResult.reason_code,
+        detail: gatewayResult.detail,
+        action: Object.freeze({
+          type: intent.action_type,
+          subject_id: intent.subject_id,
+          destination: intent.parameters.destination,
+          data_class: intent.parameters.data_class,
+        }),
+        provenance: Object.freeze({
+          artifact_id: intent.provenance_artifact_id,
+          ancestry_status: boundedVerification.status === "PASS" ? "RESOLVED" : "UNRESOLVED",
+          source_count: fullVerification.source_nodes.length,
+          witness_count: fullVerification.witnesses.length,
+          independent_paths: graph.metrics.path_count,
+          deepest_hops: graph.metrics.deepest_hops,
+          max_depth: DEMO_AUTHORIZATION_MAX_DEPTH,
+        }),
+        policy_version: ACTION_POLICY_VERSION,
+        authorization_id: gatewayResult.authorization_id ?? null,
+        trusted_state_id: gatewayResult.trusted_state_id ?? null,
+        executed: gatewayAllowed && adapterCalls.length === 1,
+      }),
       timeline,
       meta: {
         hydradb: {
@@ -778,6 +809,10 @@ export function createDemoOrchestrator(options = {}) {
   }
 
   async function run(scenario = "valid") {
+    if (pendingRuns >= MAX_PENDING_DEMO_RUNS) {
+      return failureResponse(scenario, new Error("DEMO_BUSY"), BLOCK_SYSTEM_ERROR);
+    }
+    pendingRuns += 1;
     const task = runQueue.then(async () => {
       try {
         return await runOne(scenario);
@@ -785,7 +820,11 @@ export function createDemoOrchestrator(options = {}) {
         return failureResponse(scenario, error);
       }
     });
-    runQueue = task.then(() => undefined, () => undefined);
+    runQueue = task.then(() => {
+      pendingRuns -= 1;
+    }, () => {
+      pendingRuns -= 1;
+    });
     return task;
   }
 

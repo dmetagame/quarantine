@@ -325,6 +325,8 @@ export function createActionGateway({
   maxFreshnessMs = 5_000,
   maxAncestryDepth = 16,
   verificationTimeoutMs = 5_000,
+  maxLedgerEntries = 10_000,
+  minTrustedSources = 1,
   allowedSourceAuthorities = ["quarantine-proof-connector"],
 } = {}) {
   if (typeof verifyProvenanceState !== "function") {
@@ -347,6 +349,12 @@ export function createActionGateway({
     || verificationTimeoutMs < 1
     || verificationTimeoutMs > 30_000) {
     throw new Error("verificationTimeoutMs must be between 1 and 30000");
+  }
+  if (!Number.isInteger(maxLedgerEntries) || maxLedgerEntries < 1 || maxLedgerEntries > 100_000) {
+    throw new Error("maxLedgerEntries must be between 1 and 100000");
+  }
+  if (!Number.isInteger(minTrustedSources) || minTrustedSources < 1 || minTrustedSources > 16) {
+    throw new Error("minTrustedSources must be between 1 and 16");
   }
   if (!Array.isArray(allowedSourceAuthorities)
     || allowedSourceAuthorities.length === 0
@@ -593,6 +601,9 @@ export function createActionGateway({
       || trustedState.provenance.source_nodes.length === 0) {
       return block(BLOCK_MISSING_PROVENANCE, "MISSING_PROVENANCE_WITNESS");
     }
+    if (trustedState.provenance.source_nodes.length < minTrustedSources) {
+      return block(BLOCK_POLICY, "INSUFFICIENT_TRUSTED_SOURCES");
+    }
     if (trustedState.provenance.source_nodes.some((source) => source.trust_state !== "trusted_source")) {
       return block(BLOCK_POLICY, "UNTRUSTED_TERMINAL_SOURCE");
     }
@@ -678,6 +689,12 @@ export function createActionGateway({
     const earlyReplay = replayDecision(intent, fingerprint);
     if (earlyReplay) {
       return earlyReplay;
+    }
+    if (requests.size >= maxLedgerEntries || actions.size >= maxLedgerEntries) {
+      return block(BLOCK_SYSTEM_ERROR, "ACTION_LEDGER_FULL", {
+        request_id: intent.request_id,
+        action_id: intent.action_id,
+      });
     }
 
     let verification;

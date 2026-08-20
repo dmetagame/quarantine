@@ -5,7 +5,32 @@ const DEFAULTS = Object.freeze({
   namespace: "default",
   graphId: "default",
   cellId: "cell-0",
+  timeoutMs: 5_000,
 });
+
+function abortError(timeoutMs, description) {
+  const error = new Error(`${description} timed out after ${timeoutMs}ms`);
+  error.name = "TimeoutError";
+  return error;
+}
+
+async function fetchWithTimeout(url, options, timeoutMs, description) {
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1) {
+    throw new Error("HydraDB timeoutMs must be a positive integer");
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (error?.name === "AbortError" || controller.signal.aborted) {
+      throw abortError(timeoutMs, description);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 export function propertyValue(value) {
   if (value === null || value === undefined || typeof value !== "object") {
@@ -102,6 +127,10 @@ export function pathRows(response, column = 0) {
 }
 
 export function createHydraClient(options = {}) {
+  const timeoutMs = options.timeoutMs ?? DEFAULTS.timeoutMs;
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 30_000) {
+    throw new Error("HydraDB timeoutMs must be an integer between 1 and 30000");
+  }
   const config = {
     httpBase: options.httpBase ?? process.env.HYDRA_HTTP_URL ?? DEFAULTS.httpBase,
     adminBase: options.adminBase ?? process.env.HYDRA_ADMIN_URL ?? DEFAULTS.adminBase,
@@ -109,16 +138,17 @@ export function createHydraClient(options = {}) {
     namespace: options.namespace ?? process.env.HYDRA_NAMESPACE ?? DEFAULTS.namespace,
     graphId: options.graphId ?? process.env.HYDRA_GRAPH_ID ?? DEFAULTS.graphId,
     cellId: options.cellId ?? process.env.HYDRA_CELL_ID ?? DEFAULTS.cellId,
+    timeoutMs,
   };
 
   function requestBody(query, parameters, options = {}) {
     const pageSize = options.pageSize ?? 1000;
+    const queryTimeoutMs = options.timeoutMs ?? config.timeoutMs;
     if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 4_096) {
       throw new Error("HydraDB pageSize must be an integer between 1 and 4096");
     }
-    if (options.timeoutMs !== undefined
-      && (!Number.isInteger(options.timeoutMs) || options.timeoutMs < 1)) {
-      throw new Error("HydraDB timeoutMs must be a positive integer");
+    if (!Number.isInteger(queryTimeoutMs) || queryTimeoutMs < 1 || queryTimeoutMs > 30_000) {
+      throw new Error("HydraDB timeoutMs must be an integer between 1 and 30000");
     }
     return {
       cell_id: config.cellId,
@@ -126,33 +156,44 @@ export function createHydraClient(options = {}) {
       parameters,
       page_size: pageSize,
       consistency: "strong",
+      timeout_ms: queryTimeoutMs,
       ...(options.queryId ? { query_id: options.queryId } : {}),
       ...(options.bookmark ? { bookmark: options.bookmark } : {}),
-      ...(options.timeoutMs ? { timeout_ms: options.timeoutMs } : {}),
     };
   }
 
   async function query(queryText, parameters = {}, options = {}) {
-    const response = await fetch(`${config.httpBase}/v1/graphs/${config.graphId}/query`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.token}`,
-        "Content-Type": "application/json",
-        "X-Graph-Namespace": config.namespace,
+    const request = requestBody(queryText, parameters, options);
+    const response = await fetchWithTimeout(
+      `${config.httpBase}/v1/graphs/${config.graphId}/query`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${config.token}`,
+          "Content-Type": "application/json",
+          "X-Graph-Namespace": config.namespace,
+        },
+        body: JSON.stringify(request),
       },
-      body: JSON.stringify(requestBody(queryText, parameters, options)),
-    });
+      request.timeout_ms,
+      "HydraDB query",
+    );
 
-    const body = await response.json().catch(() => null);
+    const payload = await response.json().catch(() => null);
     if (!response.ok) {
-      throw new Error(`HydraDB query failed (${response.status}): ${JSON.stringify(body)}`);
+      throw new Error(`HydraDB query failed (${response.status}): ${JSON.stringify(payload)}`);
     }
 
-    return body;
+    return payload;
   }
 
   async function assertReady() {
-    const response = await fetch(`${config.adminBase}/readyz`);
+    const response = await fetchWithTimeout(
+      `${config.adminBase}/readyz`,
+      { method: "GET" },
+      config.timeoutMs,
+      "HydraDB readiness",
+    );
     if (!response.ok) {
       throw new Error(`HydraDB is not ready at ${config.adminBase}`);
     }

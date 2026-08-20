@@ -23,15 +23,15 @@
   "implementation": {
     "hash_algorithm": "sha256",
     "files": {
-      "src/hydradb-client.mjs": "d03bd0df67804909ec48cdafd9af3066acb5bffe9bb5bd3b1d1576dbba0b19c3",
+      "src/hydradb-client.mjs": "3a0351df5f8867a233afb97a00f1ba95e8152648fab046884996f04874def767",
       "src/provenance-writer.mjs": "4c819a97e78cd49b00c2991c3492be508615c8b2311ba8d0a4e358482565784b",
-      "src/action-gateway.mjs": "cce8140621e4d87be06f6e1ebe4e822710a5ffd018a885f8e177b7dc5cfae997",
-      "src/demo-orchestrator.mjs": "401453925a25dc29ce6ef91c18b41294f4a39803d4441ea352858399e6e8b90b",
+      "src/action-gateway.mjs": "e8bad29b57c82c50def1010ff73f630235ede0aef7744490ed0184c21964c59f",
+      "src/demo-orchestrator.mjs": "bb2f41ac32a3d54fac5ebfd3261c02b092c41fc184131192e6bc48d2697a5021",
       "scripts/demo-server.mjs": "2f9a898e0d768973439b1b2d556c8a4adfb72fb4e73e973bffcd4d4983780b26",
       "scripts/prove-demo.mjs": "6de6ddf641053f958b3228c2324873762eb3094b542ef66bdc2a3d0830019a10",
       "scripts/validate-demo-evidence.mjs": "027a7d40acbb0a8665d171b0d83fb7b90b85b468a710248461ac2d52fe969664",
-      "index.html": "d7480c1589ca41eac1c092601633427e1ec87ac0b63749e47d075a638f03fb44",
-      "public/app.js": "18ead9cbeefebe7f690fe56b8d06bf9906c7b0abb6647b9cf0cc417c07b4b268",
+      "index.html": "f202f4c461d1f90c5ea5a7b0230dc5e7bfb77111674a34ebe9348ea41f41ff3a",
+      "public/app.js": "313ef668b24645d4525ab731ab1a05688a4c21d515df8e98de2f950fca77151a",
       "public/styles.css": "0d9e0f157d25d43123c36a854d821e7cd31211a86ac6535591f70fc3890750e5"
     }
   },
