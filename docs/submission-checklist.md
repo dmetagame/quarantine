@@ -41,8 +41,9 @@ competition ownership.
   <https://quarantine.rouma.online>. HTTPS and the certificate are valid;
   `VALID` returns `ALLOW`, `action.executed: true`, `adapter_calls: 1`, and
   `TAMPERED` returns `BLOCK_UNRESOLVED_ANCESTRY / DEPTH_CAP_REACHED`,
-  `action.executed: false`, `adapter_calls: 0`. Re-run this smoke test after
-  deploying the final local deadline fixes.
+  `action.executed: false`, `adapter_calls: 0`. Both return
+  `action-proof-v1`; deployed source/static hashes match commit `e5b23fb`, and
+  the bounded public queue was verified with concurrent request bursts.
 - [ ] **Demo video** - NEEDS HUMAN ACTION.
 
 ## Submission
@@ -53,8 +54,10 @@ competition ownership.
 - [x] **Final repository URL** - <https://github.com/dmetagame/quarantine>.
 - [x] **Initial public release commit** - `0389490` (`Initial Hack Hydra
   release`) is pushed to `main`.
-- [ ] **Final deployment/submission tag** - PENDING until the hosted demo is
-  deployed and revalidated.
+- [x] **Final deployment/submission tag** - `v0.1.0` points at this release
+  record after the deployed `e5b23fb` runtime and full proof suite were
+  revalidated. The tag adds release documentation only; runtime sources are
+  unchanged from the verified deployed image.
 - [ ] **Submission form** - NEEDS HUMAN ACTION.
 
 ## Required Host-Side Release Run

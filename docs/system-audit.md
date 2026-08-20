@@ -1,8 +1,9 @@
 # QUARANTINE System Audit — 2026-08-20
 
-Scope: repository, live host `https://quarantine.rouma.online`, and the
-previously passing proof suite. Previous PASS artifacts were treated as
-history, not as proof that the deployed product is complete.
+Scope: deployed runtime commit `e5b23fb`, the release-candidate repository,
+live host `https://quarantine.rouma.online`, and a fresh full proof run.
+Previous PASS artifacts were treated as history until the current
+implementation, evidence, and deployed image were independently revalidated.
 
 No authorization bypass was found on the public HTTP surface. The trust
 boundary holds. The gaps below are observed in code, reproduced on the live
@@ -121,45 +122,50 @@ authority proof. Its `independent_paths` metric counts graph paths only.
 
 Verified 2026-08-20:
 
+- Deployed source and static-asset hashes match repository commit `e5b23fb`
 - HTTPS, Let's Encrypt CN `quarantine.rouma.online`, HTTP 308 → HTTPS
 - CSP, COOP, CORP, `nosniff`, `DENY` frame, `no-store`, no cookies, no CORS
 - Health GET PASS; HydraDB endpoint leaked as `http://hydradb:8443`
 - HEAD `/api/health` 404 (GET-only)
 - No `Strict-Transport-Security`
 - HydraDB ports 18443/19091/4173/7687 closed publicly
-- Valid ALLOW + adapter 1; tampered `BLOCK_UNRESOLVED_ANCESTRY` + adapter 0
+- Valid ALLOW + adapter 1 + `action-proof-v1`; tampered
+  `BLOCK_UNRESOLVED_ANCESTRY` + adapter 0 + `action-proof-v1`
+- Two 12-request bursts returned bounded combinations of ALLOW and `DEMO_BUSY`;
+  every ALLOW invoked the adapter once and busy responses invoked it zero times
 
 ## Judge Score (Hack Hydra, brutal)
 
-These scores are the current audit baseline before the dirty post-`cb07479`
-deadline changes are deployed; recheck them against the final live image.
+These scores reflect the current repository, evidence, and deployed
+`e5b23fb` image. They are intentionally conservative about the dry-run adapter,
+process-local replay, and the absence of an in-loop model.
 
 | Criterion | Score /10 | Note |
 |---|---|---|
 | Originality | 8 | Fail-closed action gateway on reverse lineage is distinctive |
-| HydraDB usage | 7 | Real reverse traversal + create-only; HMAC is app-layer |
-| Technical depth | 8 | Snapshots, brands, replay, depth cap, atomic mixed-parent |
-| Security | 7 | Boundary is strong; hosted availability/timeouts are weak |
-| Product clarity | 7 | Two-scenario demo is clear; not yet an ACTION PROOF product |
-| Demo quality | 8 | Live HTTPS works; graph + attack probe are judge-legible |
-| Practical usefulness | 6 | Dry-run adapter; process-local replay |
+| HydraDB integration | 7 | Real graph reads/writes and native path proofs; runtime closure validation is application-owned |
+| Technical depth | 9 | Signed graph state, snapshots, brands, replay, depth caps, atomic mixed-parent rejection |
+| Security | 8 | Core boundary and deadlines are strong; durable replay and key lifecycle remain future work |
+| Usefulness | 6 | Compelling control plane, but the shipped adapter is deliberately dry-run |
 | AI relevance | 6 | Frames untrusted producer output; no model in-loop |
-| Engineering quality | 8 | No runtime deps, hashed evidence, tight tests |
-| Why HydraDB? | 7 | Multi-path + unresolved frontier are graph-shaped |
+| Demo clarity | 9 | Live VALID/TAMPERED contrast is immediate and judge-legible |
+| UI/UX | 8 | Focused single-screen graph and decision flow; operational metadata is still exposed |
+| Engineering quality | 9 | No runtime deps, bounded failures, hash-bound evidence, 70 unit tests |
+| Why HydraDB? | 8 | Reverse multi-path witnesses and unresolved frontiers are naturally graph-shaped |
 
-**Overall ~7.2 / 10.** Top score levers: (1) ACTION PROOF object, (2)
-independent-witness policy using the existing two-path graph, (3) fail-closed
-timeouts on live HydraDB, (4) conflict state, (5) durable replay before
-claiming production side effects.
+**Overall ~7.8 / 10.** The largest remaining judge gap is product proof, not
+boundary correctness: the shipped flow uses server-owned fixtures and a dry-run
+adapter, so it demonstrates how Quarantine gates an AI-proposed action without
+showing an actual model-to-tool integration.
 
 ## Ranked Backlog
 
-| ID | Sev | Category | Current | Risk | Fix | Complexity | Tests | Hackathon |
+| ID | Sev / status | Category | Current | Risk | Fix | Complexity | Tests | Hackathon |
 |---|---|---|---|---|---|---|---|---|
-| P1-TIMEOUT | P1 | Fail-closed | Complete HydraDB request/body deadline is implemented locally; hosted image pending | Availability; not an auth bypass | Default query + ready timeout; abort signal | S | Body-stall unit test | High |
-| P1-ADAPTER-TIMEOUT | P1 | Fail-closed | Bounded adapter deadline is implemented locally; hosted image pending | Stalled executor can otherwise hold a request/queue | Timeout + indeterminate replay state | S | Gateway/proof regression | High |
-| P1-QUEUE | P1 | DoS | `runQueue` and replay ledger are bounded | Memory / stalled public demo | Cap pending runs and ledger | S | Concurrent busy | High |
-| P1-PRODKEYS | P1 | Config | Production refuses published proof keys | Footgun if env missing | Refuse defaults in production | S | Boot test | Medium |
+| P1-TIMEOUT | Resolved | Fail-closed | Complete HydraDB request/body deadline is deployed and verified | Availability; not an auth bypass | Keep the bounded deadline | S | Body-stall unit test | High |
+| P1-ADAPTER-TIMEOUT | Resolved | Fail-closed | Bounded adapter deadline and indeterminate replay state are deployed and verified | Prevents stalled execution from holding a request indefinitely | Keep timeout + no automatic retry | S | Gateway/proof regression | High |
+| P1-QUEUE | P1 / resolved | DoS | `runQueue` and replay ledger are bounded and live burst backpressure returns `DEMO_BUSY` | Memory / stalled public demo | Keep caps and busy response | S | Concurrent busy | High |
+| P1-PRODKEYS | P1 / resolved | Config | Production refuses published proof keys | Footgun if env missing | Keep production fallback disabled | S | Boot test | Medium |
 | P2-HSTS | P2 | Deploy | No HSTS | SSL-strip after first visit | Caddy header | S | Live header | Medium |
 | P2-HMACCMP | P2 | Crypto | Connector compare uses `===` | Timing leak; not on public API | `timingSafeEqual` | S | Writer unit | Low |
 | P2-HEALTHLEAK | P2 | Info | Health returns `http://hydradb:8443` | Internal name leak | Omit URL | S | Health contract | Low |
@@ -170,23 +176,23 @@ claiming production side effects.
 | P3-CONFLICT | P3 | Product | No CONFLICTING state | Future depth | Distinguish contradictory claims | L | New proofs | High |
 | P3-CI | P3 | Eng | No CI | Drift | GitHub Actions `npm test` | S | Workflow | Medium |
 
-### Must fix (P1)
+### Must fix before release
 
-1. Deploy and verify the local complete-response and adapter deadlines
-2. Keep the public demo queue and replay ledger bounded
-3. Keep production key fallback disabled
+None open. The complete-response deadline, adapter deadline, bounded public
+queue, bounded replay ledger, and production key safeguards are deployed and
+verified.
 
 ### Should fix (P2)
 
-1. ACTION_PROOF in the demo response
-2. Independent-witness policy (uses existing two-path graph)
-3. HSTS + timing-safe connector compare
+1. Remove internal HydraDB/admin URLs from public health and demo metadata
+2. Add HSTS after confirming the custom domain is permanently HTTPS-only
+3. Use timing-safe connector-attestation comparison
 
 ### Optional
 
-1. Conflict-aware provenance
-2. Durable replay before real adapters
-3. CI
+1. Explicit independent-authority/disjoint-branch policy semantics
+2. Conflict-aware and artifact-staleness provenance states
+3. Durable replay before real adapters; CI for release drift
 
 Implementation follows one issue at a time. Live evidence is regenerated only
 after hashed implementation files change.
@@ -196,13 +202,14 @@ after hashed implementation files change.
 | ID | Result |
 |---|---|
 | P1-TIMEOUT | Done. HydraDB `query` and `readyz` abort after 5s (override 1–30000). Hung fetch unit tests pass. Observation hangs now become orchestrator BLOCK. |
-| P1-ADAPTER-TIMEOUT | Done locally. Adapter execution has a 5s deadline; timeout returns `ACTION_ADAPTER_TIMEOUT`, marks the identity indeterminate, and blocks replay. Deployment still pending. |
+| P1-ADAPTER-TIMEOUT | Done and deployed. Adapter execution has a 5s deadline; timeout returns `ACTION_ADAPTER_TIMEOUT`, marks the identity indeterminate, and blocks replay. |
 | P1-QUEUE | Done. `MAX_PENDING_DEMO_RUNS = 8` returns `DEMO_BUSY`. Gateway `maxLedgerEntries = 10000` returns `ACTION_LEDGER_FULL` without evicting replay identity. |
 | P1-PRODKEYS | Done. `NODE_ENV=production` refuses published proof-key fallbacks. |
 | P2-WITNESS | Done. Demo gateway requires `minTrustedSources: 2` (existing two-path valid graph). |
 | P2-PROOF | Done. Server returns `action_proof` v1; UI shows decision, independent paths, sources, authorization id prefix. |
 
-Live local proofs regenerated and `npm run validate:evidence` PASS. The public
-host currently matches `cb07479`; it does not yet include the two local
-deadline changes in this worktree. Re-run hosted smoke tests after the final
-image is deployed before creating the submission tag.
+Fresh `npm test` PASS: 70 unit tests, HydraDB viability proof, 17 provenance
+cases, 18 gateway cases, 2 end-to-end scenarios, and all evidence validators.
+The public host matches `e5b23fb`; TLS, health, VALID/TAMPERED behavior,
+`action-proof-v1`, adapter cardinality, request bounds, static-file isolation,
+and queue backpressure were revalidated before release tagging.
